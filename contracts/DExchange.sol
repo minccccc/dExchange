@@ -247,7 +247,7 @@ contract DExchange {
 
     function calculateBuyTokensAmount(address _tokenAddress, uint _purchasePrice) external view
         tokenToBeListed(_tokenAddress) returns(uint) {
-        return buyOrders[_tokenAddress].calculatePurchaseTokensAmount(_purchasePrice);
+        return sellOrders[_tokenAddress].calculatePurchaseTokensAmount(_purchasePrice);
     }
 
 

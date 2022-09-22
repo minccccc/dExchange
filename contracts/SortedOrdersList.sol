@@ -211,18 +211,24 @@ contract SortedOrdersList {
         require(_purchasePrice > 0, 'You can not buy tokens for 0 price');
         require(order.id > 0 && order.price > 0 && order.amount > 0, 'There are no orders listed on the exchange');
 
-        Order[] memory executedOrders = new Order[](idCounter - head);
+        Order[] memory executedOrders = new Order[](idCounter - head + 1);
         uint orderIndex;
         uint _tokens;
         uint _purchaseChange = _purchasePrice;
         uint currentOrderPrice;
-        while(order.id == 0) {
+        while(true) {
             if (orderIndex > 0){
                 order = getNext(order);
             }
+
+            if (order.id == 0) {
+                break;
+            }
+
             currentOrderPrice = calculateOrderPrice(order.price, order.amount);
             if (currentOrderPrice >= _purchaseChange) {
-                order.amount = calculateOrderPrice(_purchaseChange, order.amount);
+                uint _amount = _purchaseChange.mul(1 ether).div(order.price);
+                order.amount = _amount;
                 executedOrders[orderIndex++] = order;
                 return (executedOrders, _tokens + order.amount, currentOrderPrice - _purchaseChange);
             } else {

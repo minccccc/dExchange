@@ -23,8 +23,12 @@ export class NewOrder extends React.Component {
         this.typeChanged = this.typeChanged.bind(this);
     }
 
-    priceChanged(event) {
-        this.setState({ price: event.target.value });
+    async priceChanged(event) {
+        this.setState({ price: parseFloat(event.target.value) });
+
+        if (this.state.type === 1) {
+            await this.calculateMarketBuyAmount(parseFloat(event.target.value));
+        }
     }
     amountChanged(event) {
         this.setState({ amount: event.target.value });
@@ -40,10 +44,8 @@ export class NewOrder extends React.Component {
     toWei(number) {
         if (parseFloat(number) < 0) {
             throw new Error("Negative valie");
-        } else if (isNaN(parseFloat(number))) {
-            throw new Error("Not a number");
         }
-        return ethers.utils.parseEther(number);
+        return ethers.utils.parseEther(number.toString());
     }
 
     getPrice() {
@@ -52,6 +54,31 @@ export class NewOrder extends React.Component {
 
     getAmount() {
         return this.toWei(this.state.amount);
+    }
+
+    convertToEther(amount) {
+        if (amount && amount > 0) {
+            let eth = ethers.utils.formatEther(amount);
+            return (+eth).toFixed(4);
+        }
+        return 0;
+    }
+
+    async calculateMarketBuyAmount(price) {
+        if (price === 0 )
+            return;
+
+        let amount = 0;
+        try {
+            const amountBN = await this.props.exchange.calculateBuyTokensAmount(
+                this.props.selectedToken.tokenAddress, this.toWei(price));
+            amount = this.convertToEther(amountBN);
+        } catch (error) {
+            console.log(`${error.code} : ${error.errorArgs[0]}`);
+        }
+        
+        this.setState({ amount });
+        //amount...
     }
 
     async processOrder() {
@@ -66,10 +93,12 @@ export class NewOrder extends React.Component {
             switch (this.state.type) {
                 case 1:
                     // "Market Buy"
-                    // var tokens = await this.props.exchange.calculateBuyTokensAmount(
-                    //     this.props.selectedToken.tokenAddress, this.getPrice())
 
-                    console.log(tokens);
+                    console.log(parseInt(this.getPrice().toString()) / 1000000000000000000);
+                    var tokens = await this.props.exchange.calculateBuyTokensAmount(
+                        this.props.selectedToken.tokenAddress, this.getPrice())
+
+                    console.log(parseInt(tokens.toString()) / 1000000000000000000);
                     break;
                 case 2:
                     // "Market Sell"

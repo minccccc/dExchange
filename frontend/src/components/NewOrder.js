@@ -65,20 +65,18 @@ export class NewOrder extends React.Component {
     }
 
     async calculateMarketBuyAmount(price) {
-        if (price === 0 )
-            return;
-
         let amount = 0;
-        try {
-            const amountBN = await this.props.exchange.calculateBuyTokensAmount(
-                this.props.selectedToken.tokenAddress, this.toWei(price));
-            amount = this.convertToEther(amountBN);
-        } catch (error) {
-            console.log(`${error.code} : ${error.errorArgs[0]}`);
+        if (price !== 0 ) {
+            try {
+                const amountBN = await this.props.exchange.calculateBuyTokensAmount(
+                    this.props.selectedToken.tokenAddress, this.toWei(price));
+                amount = this.convertToEther(amountBN);
+            } catch (error) {
+                console.log(`${error.code} : ${error.errorArgs[0]}`);
+            }
         }
         
         this.setState({ amount });
-        //amount...
     }
 
     async processOrder() {
@@ -93,12 +91,6 @@ export class NewOrder extends React.Component {
             switch (this.state.type) {
                 case 1:
                     // "Market Buy"
-
-                    console.log(parseInt(this.getPrice().toString()) / 1000000000000000000);
-                    var tokens = await this.props.exchange.calculateBuyTokensAmount(
-                        this.props.selectedToken.tokenAddress, this.getPrice())
-
-                    console.log(parseInt(tokens.toString()) / 1000000000000000000);
                     break;
                 case 2:
                     // "Market Sell"

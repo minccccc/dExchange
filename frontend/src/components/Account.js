@@ -15,7 +15,7 @@ export class Account extends React.Component {
         const rows = this.props.listedTokens.map((token, i) => {
             return (
                 <tr key={i}
-                    className={this.props.selectedToken.tokenAdress === token.tokenAdress ? "table-success" : ""}
+                    className={this.props.selectedToken.tokenAddress === token.tokenAddress ? "table-success" : ""}
                     onClick={() => this.props.changeSelectedToken(i)}>
                     <th>{token.name.toString()}</th>
                     <td>{this.convertToEther(this.props.myBalance[i]?.wallet)}</td>

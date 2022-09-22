@@ -14,7 +14,7 @@ contract DExchange {
     struct ListedToken {
         string name;
         string symbol;
-        address tokenAdress;
+        address tokenAddress;
         ERC20 tokenContract;
     }
 
@@ -83,7 +83,7 @@ contract DExchange {
     }
 
     modifier tokenToBeListed(address _tokenAddress) {
-        require(listedTokens[_tokenAddress].tokenAdress != address(0), 
+        require(listedTokens[_tokenAddress].tokenAddress != address(0), 
             "This token is not listed on the exchange");
         _;
     }
@@ -104,12 +104,12 @@ contract DExchange {
     function addToken(ERC20 _token) external {
         require(msg.sender == owner, "Only the owner can add tokens into the exchange");
         require(address(_token) != address(0), "Listed token address is empty");
-        require(listedTokens[address(_token)].tokenAdress == address(0), "This token is already listed on the exchange");
+        require(listedTokens[address(_token)].tokenAddress == address(0), "This token is already listed on the exchange");
 
         listedTokens[address(_token)] = ListedToken({
             name : _token.name(),
             symbol : _token.symbol(),
-            tokenAdress : address(_token),
+            tokenAddress : address(_token),
             tokenContract : _token
         });
         listedTokensArray.push(address(_token));

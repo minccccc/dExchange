@@ -55,7 +55,7 @@ export class NewOrder extends React.Component {
     }
 
     async processOrder() {
-        if (!this.props.selectedToken?.tokenAdress) {
+        if (!this.props.selectedToken?.tokenAddress) {
             console.log("There is not selected token");
             return;
         }
@@ -66,6 +66,10 @@ export class NewOrder extends React.Component {
             switch (this.state.type) {
                 case 1:
                     // "Market Buy"
+                    // var tokens = await this.props.exchange.calculateBuyTokensAmount(
+                    //     this.props.selectedToken.tokenAddress, this.getPrice())
+
+                    console.log(tokens);
                     break;
                 case 2:
                     // "Market Sell"
@@ -74,12 +78,12 @@ export class NewOrder extends React.Component {
                     // "Limit Buy"
                     const ethAmount = parseFloat(this.state.price) * parseFloat(this.state.amount);
                     await this.props.exchange.placeBuyOrder(
-                        this.props.selectedToken.tokenAdress,  this.getPrice(), this.getAmount(),
+                        this.props.selectedToken.tokenAddress,  this.getPrice(), this.getAmount(),
                         { value: ethers.utils.parseEther(ethAmount.toString()) });
 
                     break;
                 case 4:
-                    await this.props.exchange.placeSellOrder(this.props.selectedToken.tokenAdress, this.getPrice(), this.getAmount());
+                    await this.props.exchange.placeSellOrder(this.props.selectedToken.tokenAddress, this.getPrice(), this.getAmount());
                     break;
                 default:
                     break;

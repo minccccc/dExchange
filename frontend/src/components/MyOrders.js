@@ -11,10 +11,10 @@ export class MyOrders extends React.Component {
     }
     async cancelOrder(isBuy, orderIndex) {
         try {
-            if (isBuy && this.props.selectedToken.tokenAdress) {
-                await this.props.exchange.cancelBuyOrder(this.props.selectedToken.tokenAdress, orderIndex);
+            if (isBuy && this.props.selectedToken.tokenAddress) {
+                await this.props.exchange.cancelBuyOrder(this.props.selectedToken.tokenAddress, orderIndex);
             } else {
-                await this.props.exchange.cancelSellOrder(this.props.selectedToken.tokenAdress, orderIndex);
+                await this.props.exchange.cancelSellOrder(this.props.selectedToken.tokenAddress, orderIndex);
             }
         } catch (error) {
             console.log(`${error.code} : ${error.errorArgs[0]}`);

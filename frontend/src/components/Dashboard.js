@@ -105,7 +105,7 @@ export class Dashboard extends React.Component {
   }
 
   refreshOrders(token) {
-    let tokenAddress = token.tokenAdress;
+    let tokenAddress = token.tokenAddress;
 
     this.getTopSellOrders(tokenAddress);
     this.getTopBuyOrders(tokenAddress);

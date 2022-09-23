@@ -250,6 +250,11 @@ contract DExchange {
         return sellOrders[_tokenAddress].calculatePurchaseTokensAmount(_purchasePrice);
     }
 
+    function calculateSellTokensPrice(address _tokenAddress, uint _purchaseAmount) external view
+        tokenToBeListed(_tokenAddress) returns(uint) {
+        return buyOrders[_tokenAddress].calculatePurchaseTokensAmount(_purchaseAmount);
+    }
+
 
     // function buyTokens(uint _amount) public payable {
         //buy tokens with ethers

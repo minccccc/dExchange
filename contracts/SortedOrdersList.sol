@@ -41,37 +41,24 @@ contract SortedOrdersList {
         uint linkNext = 0;
         Order storage current = orders[head];
 
-        if(current.id == 0 && current.prev == 0 && current.next == 0) {
+        if (current.id == 0 && current.prev == 0 && current.next == 0) {
             //First record
             head = 1;
             idCounter = 1;
         } else {
-            // console.log('===> Current Id: %s, next: %s, price: %s', current.id, current.next, current.price);
             while(true) {
                 Order storage next  = orders[current.next];
-                // console.log('===> NEXT  Id: %s, next: %s,  price: %s', next.id, next.next, next.price);
-                
                 if (shoudAddOnTop(_price, current.price)) {
                     head = idCounter;
                     current.prev = head;
                     linkPrev = 0;
                     linkNext = current.id;
-                    
-                    // console.log('===> AddOnTop  _price: %s', 
-                    //     _price);
-                
                     break;
                 } else if (shoudAddInBetween(_price, current.price, next.price)) {
                     current.next = idCounter;
                     next.prev = idCounter;
                     linkPrev = current.id;
                     linkNext = next.id;
-                    
-                    // console.log('===> Between  Id: %s, next: %s,  price: %s', 
-                    //     next.id, 
-                    //     next.next, 
-                    //     next.price);
-                
                     break;
                 } else if (next.id == 0 && next.prev == 0 && next.next == 0) {
                     current.next = idCounter;
@@ -200,20 +187,21 @@ contract SortedOrdersList {
     //     //head = Order[lastExecuted NEXT!!!!].id
     // }
 
-    function calculatePurchaseTokensAmount(uint _purchasePrice) public view returns(uint) {
-        (, uint amount, ) = ordersToBeExecuted(_purchasePrice);
+    function calculatePurchaseTokensAmount(uint _purchase) public view returns(uint) {
+        //sell => OrderType.ASC
+        (, uint amount, ) = ordersToBeExecuted(_purchase);
         return amount;
     }
 
     function ordersToBeExecuted(uint _purchasePrice) private view returns (Order[] memory, uint, uint) {
         Order memory order = getFirst();
 
-        require(_purchasePrice > 0, 'You can not buy tokens for 0 price');
+        require(_purchasePrice > 0, orderType == OrderType.ASC ? 'You can not buy tokens for 0 price' : 'You can not sell 0 tokens');
         require(order.id > 0 && order.price > 0 && order.amount > 0, 'There are no orders listed on the exchange');
 
         Order[] memory executedOrders = new Order[](idCounter - head + 1);
         uint orderIndex;
-        uint _tokens;
+        uint _total;
         uint _purchaseChange = _purchasePrice;
         uint currentOrderPrice;
         while(true) {
@@ -226,16 +214,21 @@ contract SortedOrdersList {
             }
 
             currentOrderPrice = calculateOrderPrice(order.price, order.amount);
-            if (currentOrderPrice >= _purchaseChange) {
+            if (orderType == OrderType.ASC && currentOrderPrice >= _purchaseChange) {
                 uint _amount = _purchaseChange.mul(1 ether).div(order.price);
                 order.amount = _amount;
                 executedOrders[orderIndex++] = order;
-                return (executedOrders, _tokens + order.amount, currentOrderPrice - _purchaseChange);
-            } else {
-                _tokens += order.amount;
-                _purchaseChange -= currentOrderPrice;
+                return (executedOrders, _total + order.amount, currentOrderPrice - _purchaseChange);
+            } else if (orderType == OrderType.DESC && order.amount >= _purchaseChange) {
+                uint _price = _purchaseChange.mul(order.price).div(1 ether);
+                order.price = _price;                
                 executedOrders[orderIndex++] = order;
-                assert(_purchaseChange > 0);
+                return (executedOrders, _total + order.price, order.amount - _purchaseChange);
+            } else {
+                _total += orderType == OrderType.ASC ? order.amount : order.price;
+                _purchaseChange -= orderType == OrderType.ASC ? currentOrderPrice : order.amount;
+                executedOrders[orderIndex++] = order;
+                assert(_purchaseChange >= 0);
             }
         }
         revert('There are not enough tokens on the exchange');

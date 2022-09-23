@@ -30,8 +30,12 @@ export class NewOrder extends React.Component {
             await this.calculateMarketBuyAmount(parseFloat(event.target.value));
         }
     }
-    amountChanged(event) {
+    async amountChanged(event) {
         this.setState({ amount: event.target.value });
+        
+        if (this.state.type === 2) {
+            await this.calculateMarketSellPrice(parseFloat(event.target.value));
+        }
     }
     typeChanged(event) {
         this.setState({
@@ -39,13 +43,6 @@ export class NewOrder extends React.Component {
             price: 0,
             amount: 0
         });
-    }
-
-    toWei(number) {
-        if (parseFloat(number) < 0) {
-            throw new Error("Negative valie");
-        }
-        return ethers.utils.parseEther(number.toString());
     }
 
     getPrice() {
@@ -56,7 +53,14 @@ export class NewOrder extends React.Component {
         return this.toWei(this.state.amount);
     }
 
-    convertToEther(amount) {
+    toWei(number) {
+        if (parseFloat(number) < 0) {
+            throw new Error("Negative value");
+        }
+        return ethers.utils.parseEther(number.toString());
+    }
+
+    toEther(amount) {
         if (amount && amount > 0) {
             let eth = ethers.utils.formatEther(amount);
             return (+eth).toFixed(4);
@@ -70,13 +74,28 @@ export class NewOrder extends React.Component {
             try {
                 const amountBN = await this.props.exchange.calculateBuyTokensAmount(
                     this.props.selectedToken.tokenAddress, this.toWei(price));
-                amount = this.convertToEther(amountBN);
+                amount = this.toEther(amountBN);
             } catch (error) {
                 console.log(`${error.code} : ${error.errorArgs[0]}`);
             }
         }
         
         this.setState({ amount });
+    }
+    
+    async calculateMarketSellPrice(amount) {
+        let price = 0;
+        if (amount !== 0 ) {
+            try {
+                const priceBN = await this.props.exchange.calculateSellTokensPrice(
+                    this.props.selectedToken.tokenAddress, this.toWei(amount));
+                price = this.toEther(priceBN);
+            } catch (error) {
+                console.log(`${error.code} : ${error.errorArgs[0]}`);
+            }
+        }
+        
+        this.setState({ price });
     }
 
     async processOrder() {

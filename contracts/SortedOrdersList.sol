@@ -103,21 +103,7 @@ contract SortedOrdersList {
     }
 
     function cancelOrder(uint _orderId) public returns(Order memory) {
-        Order memory order = orders[_orderId];
-        require (order.user == msg.sender || owner == msg.sender, 'You don''t have permissions to cancel this order');
-        require (order.id == _orderId && _orderId != 0, 'There is no such a order');
-
-        Order storage previous = orders[order.prev];
-        Order storage next = orders[order.next];
-
-        previous.next = next.id != 0 ? next.id : 0;
-        next.prev = previous.id != 0 ? previous.id : 0;
-        if (head == order.id) {
-            head = next.id;
-        }
-
-        delete orders[_orderId];
-        return order;
+        return finalizeOrder(_orderId);
     }
 
     function getTopOrders(uint _maxDispayOrders) public view returns(DisplayOrder[] memory){
@@ -180,15 +166,48 @@ contract SortedOrdersList {
         });
     }
 
-    // function processOrder(uint _purchasePrice) public returns(Orders...) {
-    //     //for last one ==> real Order[lastExecuted].amount - executedOrders[last].amount
-    //     //head = Order[lastExecuted].id
-    //     //IF Order[lastExecuted].amount === executedOrders[last].amount
-    //     //head = Order[lastExecuted NEXT!!!!].id
-    // }
+    function processOrder(uint _purchase) public returns(Order[] memory, uint, uint) {
+        //for last one ==> real Order[lastExecuted].amount - executedOrders[last].amount
+        //head = Order[lastExecuted].id
+        //IF Order[lastExecuted].amount === executedOrders[last].amount
+        //head = Order[lastExecuted NEXT!!!!].id
+        (Order[] memory executedOrders, uint amount, uint charge) = ordersToBeExecuted(_purchase);
+
+        console.log("---------------------------");
+
+        console.log("===> _purchase : %s amount : %s, charge : %s",
+            _purchase, amount, charge);
+
+        for (uint256 i = 0; i < executedOrders.length; i++) {
+            Order memory executedOrder = executedOrders[i];
+
+            console.log("%s - price : %s, amount : %s",
+                i, executedOrder.price, executedOrder.amount);
+
+            if (executedOrder.id == 0) {
+                break;
+            }
+
+            Order storage storedOrder = orders[executedOrder.id];
+            if (executedOrder.amount == storedOrder.amount) {
+                //whole order is executed
+                
+                console.log("finalizeOrder %s, amount %s, price %s"
+                    , executedOrder.id, executedOrder.amount, executedOrder.price);
+
+                finalizeOrder(executedOrder.id);
+            } else {
+                //last not fully executed order
+                storedOrder.amount = storedOrder.amount.sub(executedOrder.amount);
+                
+                console.log("storedOrder.amount wil be  %s", storedOrder.amount);
+            }
+        }
+
+        return (executedOrders, amount, charge);
+    }
 
     function calculatePurchaseTokensAmount(uint _purchase) public view returns(uint) {
-        //sell => OrderType.ASC
         (, uint amount, ) = ordersToBeExecuted(_purchase);
         return amount;
     }
@@ -215,13 +234,13 @@ contract SortedOrdersList {
 
             currentOrderPrice = calculateOrderPrice(order.price, order.amount);
             if (orderType == OrderType.ASC && currentOrderPrice >= _purchaseChange) {
-                uint _amount = _purchaseChange.mul(1 ether).div(order.price);
-                order.amount = _amount;
+                order.amount = _purchaseChange.mul(1 ether).div(order.price);
                 executedOrders[orderIndex++] = order;
-                return (executedOrders, _total + order.amount, currentOrderPrice - _purchaseChange);
+                uint price = order.amount.mul(order.price).div(1 ether); 
+                assert (price >= _purchaseChange);
+                return (executedOrders, _total + order.amount, price - _purchaseChange);
             } else if (orderType == OrderType.DESC && order.amount >= _purchaseChange) {
-                uint _price = _purchaseChange.mul(order.price).div(1 ether);
-                order.price = _price;                
+                order.price = _purchaseChange.mul(order.price).div(1 ether);          
                 executedOrders[orderIndex++] = order;
                 return (executedOrders, _total + order.price, order.amount - _purchaseChange);
             } else {
@@ -232,6 +251,24 @@ contract SortedOrdersList {
             }
         }
         revert('There are not enough tokens on the exchange');
+    }
+
+    function finalizeOrder(uint _orderId) private returns(Order memory) {
+        Order memory order = orders[_orderId];
+        require (order.user == msg.sender || owner == msg.sender, 'You don''t have permissions to finalize this order');
+        require (order.id == _orderId && _orderId != 0, 'There is no such a order');
+
+        Order storage previous = orders[order.prev];
+        Order storage next = orders[order.next];
+
+        previous.next = next.id != 0 ? next.id : 0;
+        next.prev = previous.id != 0 ? previous.id : 0;
+        if (head == order.id) {
+            head = next.id;
+        }
+
+        delete orders[_orderId];
+        return order;
     }
 
     function calculateOrderPrice(uint _price, uint _amount) private pure returns (uint) {

@@ -105,11 +105,11 @@ export class NewOrder extends React.Component {
         }
 
         try {
-            //LISTEN FOR THE EVENTSSSS!!!!
-
             switch (this.state.type) {
                 case 1:
                     // "Market Buy"
+                    await this.props.exchange.buyTokens(
+                        this.props.selectedToken.tokenAddress, { value: this.getPrice() });
                     break;
                 case 2:
                     // "Market Sell"
@@ -118,11 +118,12 @@ export class NewOrder extends React.Component {
                     // "Limit Buy"
                     const ethAmount = parseFloat(this.state.price) * parseFloat(this.state.amount);
                     await this.props.exchange.placeBuyOrder(
-                        this.props.selectedToken.tokenAddress,  this.getPrice(), this.getAmount(),
+                        this.props.selectedToken.tokenAddress, this.getPrice(), this.getAmount(),
                         { value: ethers.utils.parseEther(ethAmount.toString()) });
 
                     break;
                 case 4:
+                    // "Limit Sell"
                     await this.props.exchange.placeSellOrder(this.props.selectedToken.tokenAddress, this.getPrice(), this.getAmount());
                     break;
                 default:

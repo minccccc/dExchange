@@ -166,8 +166,6 @@ contract DExchange {
     function placeBuyOrder(address _tokenAddress, uint _price, uint _tokenAmount) external payable
             tokenToBeListed(_tokenAddress) {
 
-        //TODO: check if there is already some buy orders which can be executed on this price
-
         require(_tokenAmount > 0, 'Order token amount can not be 0');
         require(_price > 0, 'Order price can not be 0');
 
@@ -203,8 +201,6 @@ contract DExchange {
     function placeSellOrder(address _tokenAddress, uint _price, uint _tokenAmount) external
             tokenToBeListed(_tokenAddress) enoughBalance(_tokenAddress, _tokenAmount) {
         
-        //TODO: check if there is already some buy orders which can be executed on this price
-
         require(_tokenAmount > 0, 'Order token amount can not be 0');
         require(_price > 0, 'Order price can not be 0');
 
@@ -255,18 +251,26 @@ contract DExchange {
         return buyOrders[_tokenAddress].calculatePurchaseTokensAmount(_purchaseAmount);
     }
 
+    function buyTokens(address _tokenAddress) public payable
+        noReentrancy tokenToBeListed(_tokenAddress) {
+        
+        require(msg.value > 0, "Purchase price can not be 0");
+        
+        (SortedOrdersList.Order[] memory executedOrders, uint amount, uint charge) = sellOrders[_tokenAddress].processOrder(msg.value);
 
-    // function buyTokens(uint _amount) public payable {
-        //buy tokens with ethers
-        // uint tokenAmount = _amount.mul(rate);
+        require(executedOrders.length > 0, "There is not executed order");
 
-        // require(tokenBalance >= tokenAmount, "There are not enough tokens in the exchange");
+        tokenBalances[msg.sender][_tokenAddress] = tokenBalances[msg.sender][_tokenAddress].add(amount);
 
-        // tokenBalance = tokenBalance.sub(tokenAmount);
-        // balances[msg.sender] = balances[msg.sender].add(tokenAmount);    // token.transfer(msg.sender, tokenAmount);
+        //send the ethers to the sellers address
 
-        // emit TokensPurchased(msg.sender, tokenAmount, rate);
-    // }
+        if (charge > 0) {
+            (bool success,)= payable(msg.sender).call{value: charge}("");
+            require(success, 'Something went wrong');
+        }
+
+        emit TokensPurchased(msg.sender, _tokenAddress, msg.value - charge, amount);
+    }
     
     // function sellTokens(uint _tokenAmount) public {
         //sell tokens for ethers

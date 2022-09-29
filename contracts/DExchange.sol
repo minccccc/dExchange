@@ -262,7 +262,7 @@ contract DExchange {
 
         tokenBalances[msg.sender][_tokenAddress] = tokenBalances[msg.sender][_tokenAddress].add(amount);
 
-        //send the ethers to the sellers address
+        //TODO: send the ethers to the sellers address
 
         if (charge > 0) {
             (bool success,)= payable(msg.sender).call{value: charge}("");

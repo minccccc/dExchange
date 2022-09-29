@@ -167,10 +167,7 @@ contract SortedOrdersList {
     }
 
     function processOrder(uint _purchase) public returns(Order[] memory, uint, uint) {
-        //for last one ==> real Order[lastExecuted].amount - executedOrders[last].amount
-        //head = Order[lastExecuted].id
-        //IF Order[lastExecuted].amount === executedOrders[last].amount
-        //head = Order[lastExecuted NEXT!!!!].id
+
         (Order[] memory executedOrders, uint amount, uint charge) = ordersToBeExecuted(_purchase);
 
         console.log("---------------------------");

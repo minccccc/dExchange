@@ -212,8 +212,6 @@ contract DExchange {
 
     function cancelSellOrder(address _tokenAddress, uint _orderId) external tokenToBeListed(_tokenAddress){
         SortedOrdersList.Order memory order = sellOrders[_tokenAddress].cancelOrder(_orderId);
-        
-        // listedTokens[_tokenAddress].tokenContract.transfer(order.user, order.amount);
         tokenBalances[order.user][_tokenAddress] = tokenBalances[order.user][_tokenAddress].add(order.amount);
 
         emit OrderCanceled(_tokenAddress, _orderId);
@@ -255,33 +253,26 @@ contract DExchange {
         noReentrancy tokenToBeListed(_tokenAddress) {
         
         require(msg.value > 0, "Purchase price can not be 0");
-        
         (SortedOrdersList.Order[] memory executedOrders, uint amount, uint charge) = sellOrders[_tokenAddress].processOrder(msg.value);
 
         require(executedOrders.length > 0, "There is not executed order");
-
         tokenBalances[msg.sender][_tokenAddress] = tokenBalances[msg.sender][_tokenAddress].add(amount);
 
-        //TODO: send the ethers to the sellers address
+        for (uint i = 0; i < executedOrders.length; i++) {
+            SortedOrdersList.Order memory order = executedOrders[i];
+
+            if (order.id != 0 && order.user != address(0)) {
+                (bool sent, ) = order.user.call{value: msg.value}("");
+                require(sent, "Failed to send Ether to the seller");
+            }
+        }
 
         if (charge > 0) {
             (bool success,)= payable(msg.sender).call{value: charge}("");
-            require(success, 'Something went wrong');
+            require(success, 'Failed to send charge to the buyer');
         }
 
         emit TokensPurchased(msg.sender, _tokenAddress, msg.value - charge, amount);
     }
     
-    // function sellTokens(uint _tokenAmount) public {
-        //sell tokens for ethers
-        // uint amount = _tokenAmount.div(rate);
-        
-        // require(balances[msg.sender] >= amount, "There are not enough ethers in the exchange");
-
-        // tokenBalance = tokenBalance.add(_tokenAmount);
-        // balances[msg.sender] = balances[msg.sender].sub(_tokenAmount);
-        
-        // emit TokensSold(msg.sender, _tokenAmount, rate);
-    // }
-
 }

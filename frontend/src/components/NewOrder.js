@@ -113,6 +113,7 @@ export class NewOrder extends React.Component {
                     break;
                 case 2:
                     // "Market Sell"
+                    await this.props.exchange.sellTokens(this.props.selectedToken.tokenAddress, this.getAmount());
                     break;
                 case 3:
                     // "Limit Buy"
@@ -120,7 +121,6 @@ export class NewOrder extends React.Component {
                     await this.props.exchange.placeBuyOrder(
                         this.props.selectedToken.tokenAddress, this.getPrice(), this.getAmount(),
                         { value: ethers.utils.parseEther(ethAmount.toString()) });
-
                     break;
                 case 4:
                     // "Limit Sell"

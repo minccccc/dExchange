@@ -24,7 +24,7 @@ contract DExchange {
         uint exchange;
     }
 
-    address private owner;
+    address public owner;
     bool public locked;
     mapping (address => SortedOrdersList) private buyOrders;
     mapping (address => SortedOrdersList) private sellOrders;
@@ -249,7 +249,7 @@ contract DExchange {
         return buyOrders[_tokenAddress].calculatePurchaseTokensAmount(_purchaseAmount);
     }
 
-    function buyTokens(address _tokenAddress) public payable
+    function buyTokens(address _tokenAddress) external payable
         noReentrancy tokenToBeListed(_tokenAddress) {
         
         require(msg.value > 0, "Purchase price can not be 0");
@@ -273,6 +273,28 @@ contract DExchange {
         }
 
         emit TokensPurchased(msg.sender, _tokenAddress, msg.value - charge, amount);
+    }
+
+    function sellTokens(address _tokenAddress, uint _tokenAmount) external 
+        noReentrancy tokenToBeListed(_tokenAddress) {
+        
+        require(_tokenAmount > 0, "Can not sell 0 tokens");
+        require(tokenBalances[msg.sender][_tokenAddress] >= _tokenAmount, "You don't have enough tokens");
+        (SortedOrdersList.Order[] memory executedOrders, uint amount,) = buyOrders[_tokenAddress].processOrder(_tokenAmount);
+
+        require(executedOrders.length > 0, "There is not executed order");
+        tokenBalances[msg.sender][_tokenAddress] = tokenBalances[msg.sender][_tokenAddress].sub(_tokenAmount);
+
+        uint purchasePrice = 0;
+        for (uint i = 0; i < executedOrders.length; i++) {
+            SortedOrdersList.Order memory order = executedOrders[i];
+            purchasePrice += order.price.mul(order.amount).div(1 ether);
+            tokenBalances[order.user][_tokenAddress] += amount;
+        }
+        (bool sent, ) = payable(msg.sender).call{value: purchasePrice}("");
+        require(sent, "Failed to send Ether to the seller");
+
+        emit TokensSold(msg.sender, _tokenAddress, purchasePrice, _tokenAmount);
     }
     
 }

@@ -77,12 +77,12 @@ describe("DExchange contract", function () {
     
       await token2.connect(addr2).approve(dExchange.address, amount);
       await expect(dExchange.connect(addr2).deposit(token2.address, amount))
-        .to.emit(dExchange, "TokensDeposited").withArgs(addr2.address, token2.address, amount, amount)
+        .to.emit(dExchange, "TokensDeposited").withArgs(addr2.address, token2.address, amount)
 
       //second deposit
       await token2.connect(addr2).approve(dExchange.address, amount);    
       await expect(dExchange.connect(addr2).deposit(token2.address, amount))
-        .to.emit(dExchange, "TokensDeposited").withArgs(addr2.address, token2.address, amount, amount * 2);
+        .to.emit(dExchange, "TokensDeposited").withArgs(addr2.address, token2.address, amount);
     
       expect(await token2.balanceOf(addr2.address)).to.equal(999999999999999998000n);
       expect(await token2.balanceOf(dExchange.address)).to.equal(2000);

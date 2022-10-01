@@ -170,16 +170,8 @@ contract SortedOrdersList {
 
         (Order[] memory executedOrders, uint amount, uint charge) = ordersToBeExecuted(_purchase);
 
-        console.log("---------------------------");
-
-        console.log("===> _purchase : %s amount : %s, charge : %s",
-            _purchase, amount, charge);
-
         for (uint256 i = 0; i < executedOrders.length; i++) {
             Order memory executedOrder = executedOrders[i];
-
-            console.log("%s - price : %s, amount : %s",
-                i, executedOrder.price, executedOrder.amount);
 
             if (executedOrder.id == 0) {
                 break;
@@ -188,16 +180,10 @@ contract SortedOrdersList {
             Order storage storedOrder = orders[executedOrder.id];
             if (executedOrder.amount == storedOrder.amount) {
                 //whole order is executed
-                
-                console.log("finalizeOrder %s, amount %s, price %s"
-                    , executedOrder.id, executedOrder.amount, executedOrder.price);
-
                 finalizeOrder(executedOrder.id);
             } else {
                 //last not fully executed order
                 storedOrder.amount = storedOrder.amount.sub(executedOrder.amount);
-                
-                console.log("storedOrder.amount wil be  %s", storedOrder.amount);
             }
         }
 
@@ -237,12 +223,14 @@ contract SortedOrdersList {
                 assert (price >= _purchaseChange);
                 return (executedOrders, _total + order.amount, price - _purchaseChange);
             } else if (orderType == OrderType.DESC && order.amount >= _purchaseChange) {
-                order.price = _purchaseChange.mul(order.price).div(1 ether);          
+                uint price = _purchaseChange.mul(order.price).div(1 ether);
+                order.amount = _purchaseChange;
                 executedOrders[orderIndex++] = order;
-                return (executedOrders, _total + order.price, order.amount - _purchaseChange);
+                return (executedOrders, _total + price, 0);
             } else {
-                _total += orderType == OrderType.ASC ? order.amount : order.price;
+                _total += orderType == OrderType.ASC ? order.amount : order.price.mul(order.amount).div(1 ether);
                 _purchaseChange -= orderType == OrderType.ASC ? currentOrderPrice : order.amount;
+                
                 executedOrders[orderIndex++] = order;
                 assert(_purchaseChange >= 0);
             }

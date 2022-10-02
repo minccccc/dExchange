@@ -37,7 +37,6 @@ export class Dashboard extends React.Component {
   }
 
   toUpdateOrders(blockNumber, event) {
-    // console.log(ethers.utils.formatUnits(price));
     if (event.blockNumber >= blockNumber) {
       this.refreshOrders(this.state.selectedToken);
     }
@@ -46,15 +45,13 @@ export class Dashboard extends React.Component {
   toUpdateAccount(blockNumber, event) {
     if (event.blockNumber >= blockNumber) {
       //update account balance
-      alert("Update Account");
+      this.getMyBalance();
     }
   }
 
   async setEventListeners() {
     let provider = new ethers.providers.Web3Provider(window.ethereum);
     const blockNumber = await provider.getBlockNumber();
-    
-    // var evenets = await this.state.exchange.queryFilter(filter, -300, "latest");
     this.state.exchange.on("OrderCanceled", (tokenAddress, orderId, event) => {
       this.toUpdateOrders(blockNumber, event);
     })

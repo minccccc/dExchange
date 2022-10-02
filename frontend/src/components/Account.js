@@ -1,14 +1,64 @@
 import React from "react";
 import { ethers } from "ethers";
 import { NewOrder } from "./NewOrder";
+import contractAddress from "../contracts/contract-address.json";
 
 export class Account extends React.Component {
+    constructor(props) {
+        super(props);
+
+        this.state = {
+            amount: 0
+        };
+
+        this.amountChanged = this.amountChanged.bind(this);
+    }
+
+    async amountChanged(event) {
+        this.setState({ amount: event.target.value });
+    }
+
     convertToEther(amount) {
         if (amount && amount > 0) {
             let eth = ethers.utils.formatEther(amount);
             return (+eth).toFixed(4);
         }
         return 0;
+    }
+
+    async approveDeposit(address, amount) {
+        const abi = ["function approve(address spender, uint256 value) public returns (bool success)"]
+        let provider = new ethers.providers.Web3Provider(window.ethereum);
+        let tokenContract = new ethers.Contract(
+            address,
+            abi,
+            provider.getSigner(0)
+        );
+        await tokenContract.approve(contractAddress.DExchange, amount);
+    }
+
+    async transfer(deposit) {
+        if (!this.props.selectedToken?.tokenAddress) {
+            console.log("There is not selected token");
+            return;
+        }
+
+        try {
+            const address = this.props.selectedToken.tokenAddress;
+            const amount = ethers.utils.parseEther(this.state.amount);
+            if (deposit) {
+                await this.approveDeposit(address, amount);
+                await this.props.exchange.deposit(address, amount);
+            } else {
+                await this.props.exchange.withdraw(address, amount);
+            }
+        } catch (error) {
+            console.log(`${error.code} : ${error.errorArgs[0]}`);
+        }
+
+        this.setState({
+            amount: 0
+        });
     }
 
     render() {
@@ -47,7 +97,7 @@ export class Account extends React.Component {
                     [ {this.props.selectedToken?.symbol} ]
                 </h5>
 
-                <NewOrder 
+                <NewOrder
                     exchange={this.props.exchange}
                     selectedToken={this.props.selectedToken} />
 
@@ -58,17 +108,24 @@ export class Account extends React.Component {
                         <input
                             className="form-control"
                             type="number"
-                            step="1"
+                            step="0.1"
                             name="amount"
-                            placeholder="Amount TOK1"
+                            placeholder="1"
                             min="0"
+                            value={this.state.amount}
+                            onChange={this.amountChanged}
                         />
-
                     </div>
 
                     <div className="btn-group" role="group" aria-label="Basic example">
-                        <button type="button" className="btn btn-primary">Deposit</button>
-                        <button type="button" className="btn btn-secondary">Withdraw</button>
+                        <button type="button" className="btn btn-primary"
+                            onClick={() => this.transfer.call(this, true)}>
+                            Deposit
+                        </button>
+                        <button type="button" className="btn btn-secondary"
+                            onClick={() => this.transfer.call(this, false)}>
+                            Withdraw
+                        </button>
                     </div>
                 </div>
 

@@ -9,7 +9,6 @@ import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 contract DExchange {
     using SafeMath for uint;
 
-    
     struct ListedToken {
         string name;
         string symbol;

@@ -194,7 +194,7 @@ contract SortedOrdersList {
         (, uint amount, ) = ordersToBeExecuted(_purchase);
         return amount;
     }
-
+    
     function ordersToBeExecuted(uint _purchasePrice) private view returns (Order[] memory, uint, uint) {
         Order memory order = getFirst();
 

@@ -83,8 +83,8 @@ contract DExchange {
         owner = msg.sender;
     }
 
-    modifier tokenToBeListed(address _tokenAddress) {
-        require(listedTokens[_tokenAddress].tokenAddress != address(0), 
+    modifier tokenToBeListed(address tokenAddress) {
+        require(listedTokens[tokenAddress].tokenAddress != address(0), 
             "This token is not listed on the exchange");
         _;
     }
@@ -102,21 +102,21 @@ contract DExchange {
         locked = false;
     }
 
-    function addToken(ERC20 _token) external {
+    function addToken(ERC20 token) external {
         require(msg.sender == owner, "Only the owner can add tokens into the exchange");
-        require(address(_token) != address(0), "Listed token address is empty");
-        require(listedTokens[address(_token)].tokenAddress == address(0), "This token is already listed on the exchange");
+        require(address(token) != address(0), "Listed token address is empty");
+        require(listedTokens[address(token)].tokenAddress == address(0), "This token is already listed on the exchange");
 
-        listedTokens[address(_token)] = ListedToken({
-            name : _token.name(),
-            symbol : _token.symbol(),
-            tokenAddress : address(_token),
-            tokenContract : _token
+        listedTokens[address(token)] = ListedToken({
+            name : token.name(),
+            symbol : token.symbol(),
+            tokenAddress : address(token),
+            tokenContract : token
         });
-        listedTokensArray.push(address(_token));
+        listedTokensArray.push(address(token));
 
-        buyOrders[address(_token)] = new OrderManager(OrderType.DESC);
-        sellOrders[address(_token)] = new OrderManager(OrderType.ASC);
+        buyOrders[address(token)] = new OrderManager(OrderType.DESC);
+        sellOrders[address(token)] = new OrderManager(OrderType.ASC);
     }
 
     function getListedTokens() external view returns (ListedToken[] memory) {
@@ -144,41 +144,41 @@ contract DExchange {
         return tokenBalances[msg.sender][tokenAddress];
     }
 
-    function deposit(address _tokenAddress, uint _tokenAmount) external noReentrancy tokenToBeListed(_tokenAddress){
+    function deposit(address tokenAddress, uint tokenAmount) external noReentrancy tokenToBeListed(tokenAddress){
         
-        listedTokens[_tokenAddress].tokenContract.transferFrom(msg.sender, address(this), _tokenAmount);
+        listedTokens[tokenAddress].tokenContract.transferFrom(msg.sender, address(this), tokenAmount);
 
-        tokenBalances[msg.sender][_tokenAddress] = tokenBalances[msg.sender][_tokenAddress].add(_tokenAmount);
+        tokenBalances[msg.sender][tokenAddress] = tokenBalances[msg.sender][tokenAddress].add(tokenAmount);
         
-        emit TokensDeposited(msg.sender, _tokenAddress, _tokenAmount);
+        emit TokensDeposited(msg.sender, tokenAddress, tokenAmount);
     }
 
-    function withdraw(address _tokenAddress, uint _tokenAmount) external 
-            noReentrancy tokenToBeListed(_tokenAddress) enoughBalance(_tokenAddress, _tokenAmount) {
+    function withdraw(address tokenAddress, uint tokenAmount) external 
+            noReentrancy tokenToBeListed(tokenAddress) enoughBalance(tokenAddress, tokenAmount) {
 
-        tokenBalances[msg.sender][_tokenAddress] 
-            = tokenBalances[msg.sender][_tokenAddress].sub(_tokenAmount);
+        tokenBalances[msg.sender][tokenAddress] 
+            = tokenBalances[msg.sender][tokenAddress].sub(tokenAmount);
 
-        listedTokens[_tokenAddress].tokenContract.transfer(msg.sender, _tokenAmount);
+        listedTokens[tokenAddress].tokenContract.transfer(msg.sender, tokenAmount);
 
-        emit Withdrawn(msg.sender, _tokenAddress, _tokenAmount);
+        emit Withdrawn(msg.sender, tokenAddress, tokenAmount);
     }
 
-    function placeBuyOrder(address _tokenAddress, uint _price, uint _tokenAmount) external payable
-            tokenToBeListed(_tokenAddress) {
+    function placeBuyOrder(address tokenAddress, uint price, uint tokenAmount) external payable
+            tokenToBeListed(tokenAddress) {
 
-        require(_tokenAmount > 0, 'Order token amount can not be 0');
-        require(_price > 0, 'Order price can not be 0');
+        require(tokenAmount > 0, 'Order token amount can not be 0');
+        require(price > 0, 'Order price can not be 0');
 
         uint eth = 1 ether;
-        uint _orderPrice = _tokenAmount.mul(_price).div(eth);
+        uint _orderPrice = tokenAmount.mul(price).div(eth);
         //to calculate order price properly
-        uint _orderPriceDecimal = _tokenAmount.mul(_price).mod(eth);
+        uint _orderPriceDecimal = tokenAmount.mul(price).mod(eth);
         _orderPrice = _orderPrice.add(_orderPriceDecimal);
 
         require(msg.value >= _orderPrice , 'Insufficient ethers sent');
 
-        buyOrders[_tokenAddress].addOrder(msg.sender, _price, _tokenAmount);
+        buyOrders[tokenAddress].addOrder(msg.sender, price, tokenAmount);
 
         uint _change = msg.value.sub(_orderPrice);
         if (_change > 0) {
@@ -186,78 +186,78 @@ contract DExchange {
             require(success, 'Something went wrong');
         }
 
-        emit BuyOrderPlaced(_tokenAddress, _price, _tokenAmount);
+        emit BuyOrderPlaced(tokenAddress, price, tokenAmount);
     }
 
-    function cancelBuyOrder(address _tokenAddress, uint _orderId) external tokenToBeListed(_tokenAddress){
-        Order memory order = buyOrders[_tokenAddress].cancelOrder(_orderId);
+    function cancelBuyOrder(address tokenAddress, uint orderId) external tokenToBeListed(tokenAddress){
+        Order memory order = buyOrders[tokenAddress].cancelOrder(orderId);
                 
         uint _orderPrice = order.amount.mul(order.price).div(1 ether);
         (bool success,)= payable(order.user).call{value: _orderPrice}("");
         require(success, 'Something went wrong');
 
-        emit OrderCanceled(_tokenAddress, _orderId);
+        emit OrderCanceled(tokenAddress, orderId);
     }
 
-    function placeSellOrder(address _tokenAddress, uint _price, uint _tokenAmount) external
-            tokenToBeListed(_tokenAddress) enoughBalance(_tokenAddress, _tokenAmount) {
+    function placeSellOrder(address tokenAddress, uint price, uint tokenAmount) external
+            tokenToBeListed(tokenAddress) enoughBalance(tokenAddress, tokenAmount) {
         
-        require(_tokenAmount > 0, 'Order token amount can not be 0');
-        require(_price > 0, 'Order price can not be 0');
+        require(tokenAmount > 0, 'Order token amount can not be 0');
+        require(price > 0, 'Order price can not be 0');
 
-        sellOrders[_tokenAddress].addOrder(msg.sender, _price, _tokenAmount);
-        tokenBalances[msg.sender][_tokenAddress] = tokenBalances[msg.sender][_tokenAddress].sub(_tokenAmount);
+        sellOrders[tokenAddress].addOrder(msg.sender, price, tokenAmount);
+        tokenBalances[msg.sender][tokenAddress] = tokenBalances[msg.sender][tokenAddress].sub(tokenAmount);
         
-        emit SellOrderPlaced(_tokenAddress, _price, _tokenAmount);
+        emit SellOrderPlaced(tokenAddress, price, tokenAmount);
     }
 
-    function cancelSellOrder(address _tokenAddress, uint _orderId) external tokenToBeListed(_tokenAddress){
-        Order memory order = sellOrders[_tokenAddress].cancelOrder(_orderId);
-        tokenBalances[order.user][_tokenAddress] = tokenBalances[order.user][_tokenAddress].add(order.amount);
+    function cancelSellOrder(address tokenAddress, uint orderId) external tokenToBeListed(tokenAddress){
+        Order memory order = sellOrders[tokenAddress].cancelOrder(orderId);
+        tokenBalances[order.user][tokenAddress] = tokenBalances[order.user][tokenAddress].add(order.amount);
 
-        emit OrderCanceled(_tokenAddress, _orderId);
+        emit OrderCanceled(tokenAddress, orderId);
     }
 
-    function getTopBuyOrders(address _tokenAddress) external view 
-        tokenToBeListed(_tokenAddress) returns(OrderManager.DisplayOrder[] memory) {
+    function getTopBuyOrders(address tokenAddress) external view 
+        tokenToBeListed(tokenAddress) returns(OrderManager.DisplayOrder[] memory) {
 
-        return buyOrders[_tokenAddress].getTopOrders(maxDispayOrders);
+        return buyOrders[tokenAddress].getTopOrders(maxDispayOrders);
     }
 
-    function getTopSellOrders(address _tokenAddress) external view 
-        tokenToBeListed(_tokenAddress) returns(OrderManager.DisplayOrder[] memory) {
+    function getTopSellOrders(address tokenAddress) external view 
+        tokenToBeListed(tokenAddress) returns(OrderManager.DisplayOrder[] memory) {
         
-        return sellOrders[_tokenAddress].getTopOrders(maxDispayOrders);
+        return sellOrders[tokenAddress].getTopOrders(maxDispayOrders);
     }
 
-    function getMyBuyOrders(address _tokenAddress) external view
-        tokenToBeListed(_tokenAddress) returns(OrderManager.DisplayOrder[] memory) {
-        return buyOrders[_tokenAddress].getTopOrders(maxDispayOrders);
+    function getMyBuyOrders(address tokenAddress) external view
+        tokenToBeListed(tokenAddress) returns(OrderManager.DisplayOrder[] memory) {
+        return buyOrders[tokenAddress].getTopOrders(maxDispayOrders);
     }
 
-    function getMySellOrders(address _tokenAddress) external view
-        tokenToBeListed(_tokenAddress) returns(OrderManager.DisplayOrder[] memory) {
-        return sellOrders[_tokenAddress].getTopOrders(maxDispayOrders);
+    function getMySellOrders(address tokenAddress) external view
+        tokenToBeListed(tokenAddress) returns(OrderManager.DisplayOrder[] memory) {
+        return sellOrders[tokenAddress].getTopOrders(maxDispayOrders);
     }
 
-    function calculateBuyTokensAmount(address _tokenAddress, uint _purchasePrice) external view
-        tokenToBeListed(_tokenAddress) returns(uint) {
-        return sellOrders[_tokenAddress].calculatePurchaseTokensAmount(_purchasePrice);
+    function calculateBuyTokensAmount(address tokenAddress, uint purchasePrice) external view
+        tokenToBeListed(tokenAddress) returns(uint) {
+        return sellOrders[tokenAddress].calculatePurchaseTokensAmount(purchasePrice);
     }
 
-    function calculateSellTokensPrice(address _tokenAddress, uint _purchaseAmount) external view
-        tokenToBeListed(_tokenAddress) returns(uint) {
-        return buyOrders[_tokenAddress].calculatePurchaseTokensAmount(_purchaseAmount);
+    function calculateSellTokensPrice(address tokenAddress, uint purchaseAmount) external view
+        tokenToBeListed(tokenAddress) returns(uint) {
+        return buyOrders[tokenAddress].calculatePurchaseTokensAmount(purchaseAmount);
     }
 
-    function buyTokens(address _tokenAddress) external payable
-        noReentrancy tokenToBeListed(_tokenAddress) {
+    function buyTokens(address tokenAddress) external payable
+        noReentrancy tokenToBeListed(tokenAddress) {
         
         require(msg.value > 0, "Purchase price can not be 0");
-        (Order[] memory executedOrders, uint amount, uint charge) = sellOrders[_tokenAddress].processOrder(msg.value);
+        (Order[] memory executedOrders, uint amount, uint charge) = sellOrders[tokenAddress].processOrder(msg.value);
 
         require(executedOrders.length > 0, "There is not executed order");
-        tokenBalances[msg.sender][_tokenAddress] = tokenBalances[msg.sender][_tokenAddress].add(amount);
+        tokenBalances[msg.sender][tokenAddress] = tokenBalances[msg.sender][tokenAddress].add(amount);
 
         for (uint i = 0; i < executedOrders.length; i++) {
             Order memory order = executedOrders[i];
@@ -273,29 +273,29 @@ contract DExchange {
             require(success, 'Failed to send charge to the buyer');
         }
 
-        emit TokensPurchased(msg.sender, _tokenAddress, msg.value - charge, amount);
+        emit TokensPurchased(msg.sender, tokenAddress, msg.value - charge, amount);
     }
 
-    function sellTokens(address _tokenAddress, uint _tokenAmount) external 
-        noReentrancy tokenToBeListed(_tokenAddress) {
+    function sellTokens(address tokenAddress, uint tokenAmount) external 
+        noReentrancy tokenToBeListed(tokenAddress) {
         
-        require(_tokenAmount > 0, "Can not sell 0 tokens");
-        require(tokenBalances[msg.sender][_tokenAddress] >= _tokenAmount, "You don't have enough tokens");
-        (Order[] memory executedOrders, uint amount,) = buyOrders[_tokenAddress].processOrder(_tokenAmount);
+        require(tokenAmount > 0, "Can not sell 0 tokens");
+        require(tokenBalances[msg.sender][tokenAddress] >= tokenAmount, "You don't have enough tokens");
+        (Order[] memory executedOrders, uint amount,) = buyOrders[tokenAddress].processOrder(tokenAmount);
 
         require(executedOrders.length > 0, "There is not executed order");
-        tokenBalances[msg.sender][_tokenAddress] = tokenBalances[msg.sender][_tokenAddress].sub(_tokenAmount);
+        tokenBalances[msg.sender][tokenAddress] = tokenBalances[msg.sender][tokenAddress].sub(tokenAmount);
 
         uint purchasePrice = 0;
         for (uint i = 0; i < executedOrders.length; i++) {
             Order memory order = executedOrders[i];
             purchasePrice += order.price.mul(order.amount).div(1 ether);
-            tokenBalances[order.user][_tokenAddress] += amount;
+            tokenBalances[order.user][tokenAddress] += amount;
         }
         (bool sent, ) = payable(msg.sender).call{value: purchasePrice}("");
         require(sent, "Failed to send Ether to the seller");
 
-        emit TokensSold(msg.sender, _tokenAddress, purchasePrice, _tokenAmount);
+        emit TokensSold(msg.sender, tokenAddress, purchasePrice, tokenAmount);
     }
     
 }

@@ -17,9 +17,9 @@ contract OrderList {
         _orderType = orderType;
     }
 
-    function addOrder(address _user, uint _price, uint _amount) public {
-        require(_amount > 0, 'Can not trade 0 tokens');
-        require(_price > 0, 'Can not trade tokens for 0 price');
+    function addOrder(address user, uint price, uint amount) public {
+        require(amount > 0, 'Can not trade 0 tokens');
+        require(price > 0, 'Can not trade tokens for 0 price');
 
         uint linkPrev = 0;
         uint linkNext = 0;
@@ -32,13 +32,13 @@ contract OrderList {
         } else {
             while(true) {
                 Order storage next  = orders[current.next];
-                if (shoudAddOnTop(_price, current.price)) {
+                if (shoudAddOnTop(price, current.price)) {
                     head = idCounter;
                     current.prev = head;
                     linkPrev = 0;
                     linkNext = current.id;
                     break;
-                } else if (shoudAddInBetween(_price, current.price, next.price)) {
+                } else if (shoudAddInBetween(price, current.price, next.price)) {
                     current.next = idCounter;
                     next.prev = idCounter;
                     linkPrev = current.id;
@@ -59,9 +59,9 @@ contract OrderList {
             id: idCounter,
             prev: linkPrev,
             next: linkNext,
-            user : _user,
-            price : _price,
-            amount : _amount
+            user : user,
+            price : price,
+            amount : amount
         });
         
         idCounter += 1;
@@ -79,29 +79,29 @@ contract OrderList {
         return idCounter > 0 ? idCounter - 1 : 0;
     }
 
-    function getOrder(uint _orderId) public view returns(Order memory) {
-        Order memory order = orders[_orderId];
+    function getOrder(uint orderId) public view returns(Order memory) {
+        Order memory order = orders[orderId];
         require (order.id > 0, 'There is no such a order');
         return order;
     }
     
-    function shoudAddOnTop(uint _newOrderPrice, uint _currentOrderPrice) private view returns (bool){
-        if (_newOrderPrice <= _currentOrderPrice && _orderType == OrderType.ASC) {
+    function shoudAddOnTop(uint newOrderPrice, uint currentOrderPrice) private view returns (bool){
+        if (newOrderPrice <= currentOrderPrice && _orderType == OrderType.ASC) {
             return true;
-        } else if (_newOrderPrice >= _currentOrderPrice && _orderType == OrderType.DESC) {
+        } else if (newOrderPrice >= currentOrderPrice && _orderType == OrderType.DESC) {
             return true;
         }
         return false;
     }
     
     function shoudAddInBetween(
-        uint _newOrderPrice, 
-        uint _currentOrderPrice,
-        uint _nextOrderPrice
+        uint newOrderPrice, 
+        uint currentOrderPrice,
+        uint nextOrderPrice
     ) private view returns (bool){
-        if (_newOrderPrice > _currentOrderPrice && _newOrderPrice <= _nextOrderPrice && _orderType == OrderType.ASC) {
+        if (newOrderPrice > currentOrderPrice && newOrderPrice <= nextOrderPrice && _orderType == OrderType.ASC) {
             return true;
-        } else if (_newOrderPrice < _currentOrderPrice && _newOrderPrice >= _nextOrderPrice && _orderType == OrderType.DESC) {
+        } else if (newOrderPrice < currentOrderPrice && newOrderPrice >= nextOrderPrice && _orderType == OrderType.DESC) {
             return true;
         }
         return false;

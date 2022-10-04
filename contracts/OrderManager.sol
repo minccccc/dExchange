@@ -38,20 +38,20 @@ contract OrderManager is OrderList {
 
 
 
-    function cancelOrder(uint _orderId) public returns(Order memory) {
-        return finalizeOrder(_orderId);
+    function cancelOrder(uint orderId) public returns(Order memory) {
+        return finalizeOrder(orderId);
     }
 
-    function getTopOrders(uint _maxDispayOrders) public view returns(DisplayOrder[] memory){
-        return topOrdersToDisplay(_maxDispayOrders, false);
+    function getTopOrders(uint maxDispayOrders) public view returns(DisplayOrder[] memory){
+        return topOrdersToDisplay(maxDispayOrders, false);
     }
     
-    function getMyOrders(uint _maxDispayOrders) public view returns(DisplayOrder[] memory){
-        return topOrdersToDisplay(_maxDispayOrders, true);
+    function getMyOrders(uint maxDispayOrders) public view returns(DisplayOrder[] memory){
+        return topOrdersToDisplay(maxDispayOrders, true);
     }
 
-    function processOrder(uint _purchase) public returns(Order[] memory, uint, uint) {
-        (Order[] memory executedOrders, uint amount, uint charge) = ordersToBeExecuted(_purchase);
+    function processOrder(uint purchase) public returns(Order[] memory, uint, uint) {
+        (Order[] memory executedOrders, uint amount, uint charge) = ordersToBeExecuted(purchase);
 
         for (uint256 i = 0; i < executedOrders.length; i++) {
             Order memory executedOrder = executedOrders[i];
@@ -73,27 +73,27 @@ contract OrderManager is OrderList {
         return (executedOrders, amount, charge);
     }
 
-    function calculatePurchaseTokensAmount(uint _purchase) public view returns(uint) {
-        (, uint amount, ) = ordersToBeExecuted(_purchase);
+    function calculatePurchaseTokensAmount(uint purchase) public view returns(uint) {
+        (, uint amount, ) = ordersToBeExecuted(purchase);
         return amount;
     }
 
     function topOrdersToDisplay(
-        uint _maxDispayOrders,
-        bool _onlyMine
+        uint maxDispayOrders,
+        bool onlyMine
     ) private view returns(DisplayOrder[] memory){
-        require(_maxDispayOrders > 0, "At least one order must be displayed");
+        require(maxDispayOrders > 0, "At least one order must be displayed");
 
-        DisplayOrder[] memory displayOrders = new DisplayOrder[](_maxDispayOrders);
+        DisplayOrder[] memory displayOrders = new DisplayOrder[](maxDispayOrders);
         Order memory order = getFirst();
         uint i = 0;
-        if (!_onlyMine || order.user == msg.sender) {
+        if (!onlyMine || order.user == msg.sender) {
             displayOrders[i++] = OrderToDisplay(order);
         }
 
-        while(order.id != 0 && i < _maxDispayOrders){
+        while(order.id != 0 && i < maxDispayOrders){
             order = getNext(order);
-            if (!_onlyMine || order.user == msg.sender) {
+            if (!onlyMine || order.user == msg.sender) {
                 displayOrders[i++] = OrderToDisplay(order);
             }
         }
@@ -101,10 +101,10 @@ contract OrderManager is OrderList {
         return displayOrders;
     }
 
-    function finalizeOrder(uint _orderId) private returns(Order memory) {
-        Order memory order = orders[_orderId];
+    function finalizeOrder(uint orderId) private returns(Order memory) {
+        Order memory order = orders[orderId];
         require (order.user == msg.sender || owner == msg.sender, 'You don''t have permissions to finalize this order');
-        require (order.id == _orderId && _orderId != 0, 'There is no such a order');
+        require (order.id == orderId && orderId != 0, 'There is no such a order');
 
         Order storage previous = orders[order.prev];
         Order storage next = orders[order.next];
@@ -115,20 +115,20 @@ contract OrderManager is OrderList {
             head = next.id;
         }
 
-        delete orders[_orderId];
+        delete orders[orderId];
         return order;
     }
     
-    function ordersToBeExecuted(uint _purchasePrice) private view returns (Order[] memory, uint, uint) {
+    function ordersToBeExecuted(uint purchasePrice) private view returns (Order[] memory, uint, uint) {
         Order memory order = getFirst();
 
-        require(_purchasePrice > 0, _orderType == OrderType.ASC ? 'You can not buy tokens for 0 price' : 'You can not sell 0 tokens');
+        require(purchasePrice > 0, _orderType == OrderType.ASC ? 'You can not buy tokens for 0 price' : 'You can not sell 0 tokens');
         require(order.id > 0 && order.price > 0 && order.amount > 0, 'There are no orders listed on the exchange');
 
         Order[] memory executedOrders = new Order[](idCounter - head + 1);
         uint orderIndex;
         uint _total;
-        uint _purchaseChange = _purchasePrice;
+        uint _purchaseChange = purchasePrice;
         uint currentOrderPrice;
         while(true) {
             if (orderIndex > 0){
@@ -162,9 +162,9 @@ contract OrderManager is OrderList {
         revert('There are not enough tokens on the exchange');
     }
 
-    function calculateOrderPrice(uint _price, uint _amount) private pure returns (uint) {
-        uint _orderPrice = _amount.mul(_price).div(1 ether);
-        uint _orderPriceDecimal = _amount.mul(_price).mod(1 ether);
+    function calculateOrderPrice(uint price, uint amount) private pure returns (uint) {
+        uint _orderPrice = amount.mul(price).div(1 ether);
+        uint _orderPriceDecimal = amount.mul(price).mod(1 ether);
         _orderPrice = _orderPrice.add(_orderPriceDecimal);
         return _orderPrice;
     }

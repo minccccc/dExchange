@@ -12,34 +12,13 @@ import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 contract OrderManager is OrderList {
     using SafeMath for uint;
 
-    OrderType private orderType;
+    OrderType private immutable _orderType;
     address private owner;
     
-    constructor(OrderType _orderType) {
+    constructor(OrderType orderType) OrderList(orderType) {
         owner = msg.sender;
-        orderType = _orderType;
-        setOrderType(_orderType);
+        _orderType = orderType;
     }
-
-    // function addOrder(address _user, uint _price, uint _amount) public {
-    //     // orders.addOrder(_user, _price, _amount);
-    // }
-    
-    // function getOrdersCount() public view returns (uint) {
-    //     return idCounter > 0 ? idCounter - 1 : 0;
-    // }
-    
-    // function getOrder2(uint _orderId) public view returns (Order memory) {
-    //     return super.getOrder(_orderId);
-    // }
-
-    // function getOrder3(uint _orderId) public view returns (Order memory) {
-    //     return getOrder(_orderId);
-    // }
-    
-
-
-
 
     //TODO extract to separate file
     struct DisplayOrder {
@@ -143,7 +122,7 @@ contract OrderManager is OrderList {
     function ordersToBeExecuted(uint _purchasePrice) private view returns (Order[] memory, uint, uint) {
         Order memory order = getFirst();
 
-        require(_purchasePrice > 0, orderType == OrderType.ASC ? 'You can not buy tokens for 0 price' : 'You can not sell 0 tokens');
+        require(_purchasePrice > 0, _orderType == OrderType.ASC ? 'You can not buy tokens for 0 price' : 'You can not sell 0 tokens');
         require(order.id > 0 && order.price > 0 && order.amount > 0, 'There are no orders listed on the exchange');
 
         Order[] memory executedOrders = new Order[](idCounter - head + 1);
@@ -161,20 +140,20 @@ contract OrderManager is OrderList {
             }
 
             currentOrderPrice = calculateOrderPrice(order.price, order.amount);
-            if (orderType == OrderType.ASC && currentOrderPrice >= _purchaseChange) {
+            if (_orderType == OrderType.ASC && currentOrderPrice >= _purchaseChange) {
                 order.amount = _purchaseChange.mul(1 ether).div(order.price);
                 executedOrders[orderIndex++] = order;
                 uint price = order.amount.mul(order.price).div(1 ether); 
                 assert (price >= _purchaseChange);
                 return (executedOrders, _total + order.amount, price - _purchaseChange);
-            } else if (orderType == OrderType.DESC && order.amount >= _purchaseChange) {
+            } else if (_orderType == OrderType.DESC && order.amount >= _purchaseChange) {
                 uint price = _purchaseChange.mul(order.price).div(1 ether);
                 order.amount = _purchaseChange;
                 executedOrders[orderIndex++] = order;
                 return (executedOrders, _total + price, 0);
             } else {
-                _total += orderType == OrderType.ASC ? order.amount : order.price.mul(order.amount).div(1 ether);
-                _purchaseChange -= orderType == OrderType.ASC ? currentOrderPrice : order.amount;
+                _total += _orderType == OrderType.ASC ? order.amount : order.price.mul(order.amount).div(1 ether);
+                _purchaseChange -= _orderType == OrderType.ASC ? currentOrderPrice : order.amount;
                 
                 executedOrders[orderIndex++] = order;
                 assert(_purchaseChange >= 0);

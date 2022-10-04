@@ -7,18 +7,14 @@ import "./OrderTypeEnum.sol";
 /// @dev Collect all orders sorted like in LinkedList
 contract OrderList {
 
-    OrderType private orderType;
+    OrderType private immutable _orderType;
 
     uint public head;
     uint public idCounter;
     mapping (uint => Order) public orders;
     
-    // constructor(OrderType _orderType) {
-    //     orderType = _orderType;
-    // }
-
-    function setOrderType(OrderType _orderType) public {
-        orderType = _orderType;
+    constructor(OrderType orderType) {
+        _orderType = orderType;
     }
 
     function addOrder(address _user, uint _price, uint _amount) public {
@@ -90,9 +86,9 @@ contract OrderList {
     }
     
     function shoudAddOnTop(uint _newOrderPrice, uint _currentOrderPrice) private view returns (bool){
-        if (_newOrderPrice <= _currentOrderPrice && orderType == OrderType.ASC) {
+        if (_newOrderPrice <= _currentOrderPrice && _orderType == OrderType.ASC) {
             return true;
-        } else if (_newOrderPrice >= _currentOrderPrice && orderType == OrderType.DESC) {
+        } else if (_newOrderPrice >= _currentOrderPrice && _orderType == OrderType.DESC) {
             return true;
         }
         return false;
@@ -103,9 +99,9 @@ contract OrderList {
         uint _currentOrderPrice,
         uint _nextOrderPrice
     ) private view returns (bool){
-        if (_newOrderPrice > _currentOrderPrice && _newOrderPrice <= _nextOrderPrice && orderType == OrderType.ASC) {
+        if (_newOrderPrice > _currentOrderPrice && _newOrderPrice <= _nextOrderPrice && _orderType == OrderType.ASC) {
             return true;
-        } else if (_newOrderPrice < _currentOrderPrice && _newOrderPrice >= _nextOrderPrice && orderType == OrderType.DESC) {
+        } else if (_newOrderPrice < _currentOrderPrice && _newOrderPrice >= _nextOrderPrice && _orderType == OrderType.DESC) {
             return true;
         }
         return false;

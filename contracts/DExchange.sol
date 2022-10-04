@@ -1,7 +1,10 @@
 //SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.9;
 
-import "./SortedOrdersList.sol";
+import "./Order.sol";
+import "./OrderManager.sol";
+import "./OrderTypeEnum.sol";
+// import "./SortedOrdersList.sol";
 import "hardhat/console.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
@@ -24,8 +27,8 @@ contract DExchange {
 
     address public owner;
     bool public locked;
-    mapping (address => SortedOrdersList) private buyOrders;
-    mapping (address => SortedOrdersList) private sellOrders;
+    mapping (address => OrderManager) private buyOrders;
+    mapping (address => OrderManager) private sellOrders;
 
     mapping (address => ListedToken) public listedTokens;
     address[] private listedTokensArray;
@@ -112,8 +115,8 @@ contract DExchange {
         });
         listedTokensArray.push(address(_token));
 
-        buyOrders[address(_token)] = new SortedOrdersList(SortedOrdersList.OrderType.DESC);
-        sellOrders[address(_token)] = new SortedOrdersList(SortedOrdersList.OrderType.ASC);
+        buyOrders[address(_token)] = new OrderManager(OrderType.DESC);
+        sellOrders[address(_token)] = new OrderManager(OrderType.ASC);
     }
 
     function getListedTokens() external view returns (ListedToken[] memory) {
@@ -187,7 +190,7 @@ contract DExchange {
     }
 
     function cancelBuyOrder(address _tokenAddress, uint _orderId) external tokenToBeListed(_tokenAddress){
-        SortedOrdersList.Order memory order = buyOrders[_tokenAddress].cancelOrder(_orderId);
+        Order memory order = buyOrders[_tokenAddress].cancelOrder(_orderId);
                 
         uint _orderPrice = order.amount.mul(order.price).div(1 ether);
         (bool success,)= payable(order.user).call{value: _orderPrice}("");
@@ -209,31 +212,31 @@ contract DExchange {
     }
 
     function cancelSellOrder(address _tokenAddress, uint _orderId) external tokenToBeListed(_tokenAddress){
-        SortedOrdersList.Order memory order = sellOrders[_tokenAddress].cancelOrder(_orderId);
+        Order memory order = sellOrders[_tokenAddress].cancelOrder(_orderId);
         tokenBalances[order.user][_tokenAddress] = tokenBalances[order.user][_tokenAddress].add(order.amount);
 
         emit OrderCanceled(_tokenAddress, _orderId);
     }
 
     function getTopBuyOrders(address _tokenAddress) external view 
-        tokenToBeListed(_tokenAddress) returns(SortedOrdersList.DisplayOrder[] memory) {
+        tokenToBeListed(_tokenAddress) returns(OrderManager.DisplayOrder[] memory) {
 
         return buyOrders[_tokenAddress].getTopOrders(maxDispayOrders);
     }
 
     function getTopSellOrders(address _tokenAddress) external view 
-        tokenToBeListed(_tokenAddress) returns(SortedOrdersList.DisplayOrder[] memory) {
+        tokenToBeListed(_tokenAddress) returns(OrderManager.DisplayOrder[] memory) {
         
         return sellOrders[_tokenAddress].getTopOrders(maxDispayOrders);
     }
 
     function getMyBuyOrders(address _tokenAddress) external view
-        tokenToBeListed(_tokenAddress) returns(SortedOrdersList.DisplayOrder[] memory) {
+        tokenToBeListed(_tokenAddress) returns(OrderManager.DisplayOrder[] memory) {
         return buyOrders[_tokenAddress].getTopOrders(maxDispayOrders);
     }
 
     function getMySellOrders(address _tokenAddress) external view
-        tokenToBeListed(_tokenAddress) returns(SortedOrdersList.DisplayOrder[] memory) {
+        tokenToBeListed(_tokenAddress) returns(OrderManager.DisplayOrder[] memory) {
         return sellOrders[_tokenAddress].getTopOrders(maxDispayOrders);
     }
 
@@ -251,13 +254,13 @@ contract DExchange {
         noReentrancy tokenToBeListed(_tokenAddress) {
         
         require(msg.value > 0, "Purchase price can not be 0");
-        (SortedOrdersList.Order[] memory executedOrders, uint amount, uint charge) = sellOrders[_tokenAddress].processOrder(msg.value);
+        (Order[] memory executedOrders, uint amount, uint charge) = sellOrders[_tokenAddress].processOrder(msg.value);
 
         require(executedOrders.length > 0, "There is not executed order");
         tokenBalances[msg.sender][_tokenAddress] = tokenBalances[msg.sender][_tokenAddress].add(amount);
 
         for (uint i = 0; i < executedOrders.length; i++) {
-            SortedOrdersList.Order memory order = executedOrders[i];
+            Order memory order = executedOrders[i];
 
             if (order.id != 0 && order.user != address(0)) {
                 (bool sent, ) = order.user.call{value: msg.value}("");
@@ -278,14 +281,14 @@ contract DExchange {
         
         require(_tokenAmount > 0, "Can not sell 0 tokens");
         require(tokenBalances[msg.sender][_tokenAddress] >= _tokenAmount, "You don't have enough tokens");
-        (SortedOrdersList.Order[] memory executedOrders, uint amount,) = buyOrders[_tokenAddress].processOrder(_tokenAmount);
+        (Order[] memory executedOrders, uint amount,) = buyOrders[_tokenAddress].processOrder(_tokenAmount);
 
         require(executedOrders.length > 0, "There is not executed order");
         tokenBalances[msg.sender][_tokenAddress] = tokenBalances[msg.sender][_tokenAddress].sub(_tokenAmount);
 
         uint purchasePrice = 0;
         for (uint i = 0; i < executedOrders.length; i++) {
-            SortedOrdersList.Order memory order = executedOrders[i];
+            Order memory order = executedOrders[i];
             purchasePrice += order.price.mul(order.amount).div(1 ether);
             tokenBalances[order.user][_tokenAddress] += amount;
         }

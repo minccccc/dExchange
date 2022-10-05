@@ -1,10 +1,11 @@
 //SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.9;
 
-import "./Order.sol";
+import "./common/Order.sol";
+import "./common/DisplayOrder.sol";
+import "./common/OrderTypeEnum.sol";
+import "./interfaces/IOrderManager.sol";
 import "./OrderManager.sol";
-import "./OrderTypeEnum.sol";
-// import "./SortedOrdersList.sol";
 import "hardhat/console.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
@@ -25,59 +26,25 @@ contract DExchange {
         uint exchange;
     }
 
+    event TokensDeposited(address indexed account, address indexed token, uint amount);
+    event Withdrawn( address indexed account, address indexed token, uint amount);
+    event TokensPurchased(address indexed account, address indexed token, uint price, uint amount);
+    event TokensSold(address indexed account, address indexed token, uint price, uint amount);
+    event BuyOrderPlaced(address indexed token, uint price, uint amount);
+    event SellOrderPlaced(address indexed token, uint price, uint amount);
+    event OrderCanceled(address indexed token, uint orderId);
+
     address public owner;
     bool public locked;
-    mapping (address => OrderManager) private buyOrders;
-    mapping (address => OrderManager) private sellOrders;
+    mapping (address => IOrderManager) private buyOrders;
+    mapping (address => IOrderManager) private sellOrders;
 
     mapping (address => ListedToken) public listedTokens;
     address[] private listedTokensArray;
     mapping (address => mapping ( address => uint)) private tokenBalances;
 
     uint8 private maxDispayOrders = 10;
-
-    event TokensDeposited(
-        address indexed account,
-        address indexed token,
-        uint amount
-    );
     
-    event Withdrawn(
-        address indexed account,
-        address indexed token,
-        uint amount
-    );
-
-    event TokensPurchased(
-        address indexed account,
-        address indexed token,
-        uint price,
-        uint amount
-    );
-
-    event TokensSold(
-        address indexed account,
-        address indexed token,
-        uint price,
-        uint amount
-    );
-
-    event BuyOrderPlaced(
-        address indexed token,
-        uint price,
-        uint amount
-    );
-    
-    event SellOrderPlaced(
-        address indexed token,
-        uint price,
-        uint amount
-    );
-
-    event OrderCanceled(
-        address indexed token,
-        uint orderId
-    );
     
     constructor() {
         owner = msg.sender;
@@ -95,6 +62,7 @@ contract DExchange {
         _;
     }
 
+    //TODO: check reentrancy from OpenZeppelin
     modifier noReentrancy() {
         require(!locked, "Exchange locked, please try again!");
         locked = true;
@@ -104,7 +72,7 @@ contract DExchange {
 
     function addToken(ERC20 token) external {
         require(msg.sender == owner, "Only the owner can add tokens into the exchange");
-        require(address(token) != address(0), "Listed token address is empty");
+        require(address(token) != address(0), "Token address is empty");
         require(listedTokens[address(token)].tokenAddress == address(0), "This token is already listed on the exchange");
 
         listedTokens[address(token)] = ListedToken({
@@ -145,10 +113,9 @@ contract DExchange {
     }
 
     function deposit(address tokenAddress, uint tokenAmount) external noReentrancy tokenToBeListed(tokenAddress){
-        
-        listedTokens[tokenAddress].tokenContract.transferFrom(msg.sender, address(this), tokenAmount);
 
-        tokenBalances[msg.sender][tokenAddress] = tokenBalances[msg.sender][tokenAddress].add(tokenAmount);
+        tokenBalances[msg.sender][tokenAddress] += tokenAmount;       
+        listedTokens[tokenAddress].tokenContract.transferFrom(msg.sender, address(this), tokenAmount);
         
         emit TokensDeposited(msg.sender, tokenAddress, tokenAmount);
     }
@@ -156,9 +123,7 @@ contract DExchange {
     function withdraw(address tokenAddress, uint tokenAmount) external 
             noReentrancy tokenToBeListed(tokenAddress) enoughBalance(tokenAddress, tokenAmount) {
 
-        tokenBalances[msg.sender][tokenAddress] 
-            = tokenBalances[msg.sender][tokenAddress].sub(tokenAmount);
-
+        tokenBalances[msg.sender][tokenAddress] -= tokenAmount;
         listedTokens[tokenAddress].tokenContract.transfer(msg.sender, tokenAmount);
 
         emit Withdrawn(msg.sender, tokenAddress, tokenAmount);
@@ -189,7 +154,7 @@ contract DExchange {
         emit BuyOrderPlaced(tokenAddress, price, tokenAmount);
     }
 
-    function cancelBuyOrder(address tokenAddress, uint orderId) external tokenToBeListed(tokenAddress){
+    function cancelBuyOrder(address tokenAddress, uint orderId) external tokenToBeListed(tokenAddress) {
         Order memory order = buyOrders[tokenAddress].cancelOrder(orderId);
                 
         uint _orderPrice = order.amount.mul(order.price).div(1 ether);
@@ -211,7 +176,7 @@ contract DExchange {
         emit SellOrderPlaced(tokenAddress, price, tokenAmount);
     }
 
-    function cancelSellOrder(address tokenAddress, uint orderId) external tokenToBeListed(tokenAddress){
+    function cancelSellOrder(address tokenAddress, uint orderId) external tokenToBeListed(tokenAddress) {
         Order memory order = sellOrders[tokenAddress].cancelOrder(orderId);
         tokenBalances[order.user][tokenAddress] = tokenBalances[order.user][tokenAddress].add(order.amount);
 
@@ -219,24 +184,24 @@ contract DExchange {
     }
 
     function getTopBuyOrders(address tokenAddress) external view 
-        tokenToBeListed(tokenAddress) returns(OrderManager.DisplayOrder[] memory) {
+        tokenToBeListed(tokenAddress) returns(DisplayOrder[] memory) {
 
         return buyOrders[tokenAddress].getTopOrders(maxDispayOrders);
     }
 
     function getTopSellOrders(address tokenAddress) external view 
-        tokenToBeListed(tokenAddress) returns(OrderManager.DisplayOrder[] memory) {
+        tokenToBeListed(tokenAddress) returns(DisplayOrder[] memory) {
         
         return sellOrders[tokenAddress].getTopOrders(maxDispayOrders);
     }
 
     function getMyBuyOrders(address tokenAddress) external view
-        tokenToBeListed(tokenAddress) returns(OrderManager.DisplayOrder[] memory) {
+        tokenToBeListed(tokenAddress) returns(DisplayOrder[] memory) {
         return buyOrders[tokenAddress].getTopOrders(maxDispayOrders);
     }
 
     function getMySellOrders(address tokenAddress) external view
-        tokenToBeListed(tokenAddress) returns(OrderManager.DisplayOrder[] memory) {
+        tokenToBeListed(tokenAddress) returns(DisplayOrder[] memory) {
         return sellOrders[tokenAddress].getTopOrders(maxDispayOrders);
     }
 
@@ -283,7 +248,7 @@ contract DExchange {
         require(tokenBalances[msg.sender][tokenAddress] >= tokenAmount, "You don't have enough tokens");
         (Order[] memory executedOrders, uint amount,) = buyOrders[tokenAddress].processOrder(tokenAmount);
 
-        require(executedOrders.length > 0, "There is not executed order");
+        require(executedOrders.length > 0, "There is no executed order");
         tokenBalances[msg.sender][tokenAddress] = tokenBalances[msg.sender][tokenAddress].sub(tokenAmount);
 
         uint purchasePrice = 0;

@@ -1,11 +1,12 @@
 //SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.9;
 
-import "./Order.sol";
-import "./OrderTypeEnum.sol";
+import "./common/Order.sol";
+import "./common/OrderTypeEnum.sol";
+import "./interfaces/IOrderList.sol";
 
-/// @dev Collect all orders sorted like in LinkedList
-contract OrderList {
+/// @dev Iterable orders list structured like LinkedList
+contract OrderList is IOrderList {
 
     OrderType private immutable _orderType;
 
@@ -17,7 +18,11 @@ contract OrderList {
         _orderType = orderType;
     }
 
-    function addOrder(address user, uint price, uint amount) public {
+    function addOrder(
+        address user,
+        uint price,
+        uint amount
+    ) public {
         require(amount > 0, 'Can not trade 0 tokens');
         require(price > 0, 'Can not trade tokens for 0 price');
 
@@ -67,11 +72,11 @@ contract OrderList {
         idCounter += 1;
     }
 
-    function getFirst() internal view returns(Order memory) {
+    function getFirst() public view returns(Order memory) {
         return orders[head];
     }
     
-    function getNext(Order memory order) internal view returns(Order memory) {
+    function getNext(Order memory order) public view returns(Order memory) {
         return orders[order.next];
     }
     
@@ -85,7 +90,10 @@ contract OrderList {
         return order;
     }
     
-    function shoudAddOnTop(uint newOrderPrice, uint currentOrderPrice) private view returns (bool){
+    function shoudAddOnTop(
+        uint newOrderPrice,
+        uint currentOrderPrice
+    ) private view returns (bool){
         if (newOrderPrice <= currentOrderPrice && _orderType == OrderType.ASC) {
             return true;
         } else if (newOrderPrice >= currentOrderPrice && _orderType == OrderType.DESC) {

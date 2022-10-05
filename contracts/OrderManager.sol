@@ -1,15 +1,16 @@
 //SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.9;
 
-import "./Order.sol";
+import "./common/Order.sol";
+import "./common/DisplayOrder.sol";
 import "./OrderList.sol";
-import "./OrderTypeEnum.sol";
+import "./common/OrderTypeEnum.sol";
+import "./interfaces/IOrderManager.sol";
 import "hardhat/console.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
-/// @dev Managing orders
-contract OrderManager is OrderList {
+contract OrderManager is IOrderManager, OrderList {
     using SafeMath for uint;
 
     OrderType private immutable _orderType;
@@ -18,36 +19,6 @@ contract OrderManager is OrderList {
     constructor(OrderType orderType) OrderList(orderType) {
         owner = msg.sender;
         _orderType = orderType;
-    }
-
-    //TODO extract to separate file
-    struct DisplayOrder {
-        uint id;
-        uint price;
-        uint amount;
-    }
-    function OrderToDisplay(Order memory order) private pure returns(DisplayOrder memory){
-        return DisplayOrder({
-            id: order.id,
-            price: order.price,
-            amount: order.amount
-        });
-    }
-    
-
-
-
-
-    function cancelOrder(uint orderId) public returns(Order memory) {
-        return finalizeOrder(orderId);
-    }
-
-    function getTopOrders(uint maxDispayOrders) public view returns(DisplayOrder[] memory){
-        return topOrdersToDisplay(maxDispayOrders, false);
-    }
-    
-    function getMyOrders(uint maxDispayOrders) public view returns(DisplayOrder[] memory){
-        return topOrdersToDisplay(maxDispayOrders, true);
     }
 
     function processOrder(uint purchase) public returns(Order[] memory, uint, uint) {
@@ -73,10 +44,23 @@ contract OrderManager is OrderList {
         return (executedOrders, amount, charge);
     }
 
+    function cancelOrder(uint orderId) public returns(Order memory) {
+        return finalizeOrder(orderId);
+    }
+
     function calculatePurchaseTokensAmount(uint purchase) public view returns(uint) {
         (, uint amount, ) = ordersToBeExecuted(purchase);
         return amount;
     }
+
+    function getTopOrders(uint maxDispayOrders) public view returns(DisplayOrder[] memory){
+        return topOrdersToDisplay(maxDispayOrders, false);
+    }
+    
+    function getMyOrders(uint maxDispayOrders) public view returns(DisplayOrder[] memory){
+        return topOrdersToDisplay(maxDispayOrders, true);
+    }
+
 
     function topOrdersToDisplay(
         uint maxDispayOrders,
@@ -88,17 +72,25 @@ contract OrderManager is OrderList {
         Order memory order = getFirst();
         uint i = 0;
         if (!onlyMine || order.user == msg.sender) {
-            displayOrders[i++] = OrderToDisplay(order);
+            displayOrders[i++] = orderToDisplay(order);
         }
 
         while(order.id != 0 && i < maxDispayOrders){
             order = getNext(order);
             if (!onlyMine || order.user == msg.sender) {
-                displayOrders[i++] = OrderToDisplay(order);
+                displayOrders[i++] = orderToDisplay(order);
             }
         }
 
         return displayOrders;
+    }
+
+    function orderToDisplay(Order memory order) private pure returns(DisplayOrder memory){
+        return DisplayOrder({
+            id: order.id,
+            price: order.price,
+            amount: order.amount
+        });
     }
 
     function finalizeOrder(uint orderId) private returns(Order memory) {

@@ -46,7 +46,7 @@ describe("DExchange contract", function () {
       const { dExchange, owner } = await loadFixture(deployFixture);
 
       await expect(dExchange.connect(owner).addToken('0x0000000000000000000000000000000000000000'))
-        .to.be.revertedWith("Listed token address is empty");
+        .to.be.revertedWith("Token address is empty");
     })
 
     it('Only owner can add new tokens to the exchange', async () => {

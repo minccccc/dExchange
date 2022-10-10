@@ -1,5 +1,6 @@
 const { expect } = require("chai");
 const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
+const { deployDiamond } = require('../scripts/diamondDeploy.js')
 
 describe("DExchange contract", function () {
   async function deployFixture() {
@@ -12,19 +13,49 @@ describe("DExchange contract", function () {
     return { dExchange, token1, token2, token3, owner, addr2, addr3 };
   }
 
-  async function deployExchangeToken(owner, contractName) {
-    const contract = await ethers.getContractFactory(contractName);
-    const token = await contract.connect(owner).deploy();
-    await token.deployed();
-    return token;
-  }
+  // async function deployExchangeToken(owner, contractName) {
+  //   const contract = await ethers.getContractFactory(contractName);
+  //   const token = await contract.connect(owner).deploy();
+  //   await token.deployed();
+  //   return token;
+  // }
+
+  let diamondAddress
+  let diamondCutFacet
+  let diamondLoupeFacet
+  let ownershipFacet
+  let accountBalanceFacet
+  let depositTokenFacet
+  let displayOrdersFacet
+  let orderExecutorFacet
+  let orderFactoryFacet
+  let tokenFactoryFacet
+  let withdrawTokenFacet
+
+  beforeEach(async function () {
+    diamondAddress = await deployDiamond(true)
+    diamondCutFacet = await ethers.getContractAt('DiamondCutFacet', diamondAddress)
+    diamondLoupeFacet = await ethers.getContractAt('DiamondLoupeFacet', diamondAddress)
+    ownershipFacet = await ethers.getContractAt('OwnershipFacet', diamondAddress)
+    accountBalanceFacet = await ethers.getContractAt('AccountBalanceFacet', diamondAddress)
+    depositTokenFacet = await ethers.getContractAt('DepositTokenFacet', diamondAddress)
+    displayOrdersFacet = await ethers.getContractAt('DisplayOrdersFacet', diamondAddress)
+    orderExecutorFacet = await ethers.getContractAt('OrderExecutorFacet', diamondAddress)
+    orderFactoryFacet = await ethers.getContractAt('OrderFactoryFacet', diamondAddress)
+    tokenFactoryFacet = await ethers.getContractAt('TokenFactoryFacet', diamondAddress)
+    withdrawTokenFacet = await ethers.getContractAt('WithdrawTokenFacet', diamondAddress)
+  })
 
   // You can nest describe calls to create subsections.
   describe("Deployment", function () {
     it("Should set the right owner", async function () {
-      const { dExchange, owner } = await loadFixture(deployFixture);
-
-      expect(await dExchange.owner()).to.equal(owner.address);
+      const [owner] = await ethers.getSigners();
+      // const { dExchange, owner } = await loadFixture(deployFixture);
+      // expect(await dExchange.owner()).to.equal(owner.address);
+      
+      const ownershipFacet = await ethers.getContractAt('OwnershipFacet', diamondAddress)
+      console.log("==============>" + await ownershipFacet.owner());
+      expect(await ownershipFacet.owner()).to.equal(owner.address);
     });
   });
   
@@ -304,81 +335,5 @@ describe("DExchange contract", function () {
   })
 
 
-
-
-  // describe('buyTokens()', async () => {
-
-  //   it('Allows user to instantly purchase tokens for a fixed price', async () => {
-  //     const { dExchange, token1, token2, token3, owner, addr2, addr3 } = await loadFixture(deployFixture);
-
-  //     await dExchange.addToken(token2.address);
-  //     let ownerBalance = await dExchange.checkBalance();
-  //     let addr2Balance = await dExchange.connect(addr2).checkBalance();
-  //     let addr3Balance = await dExchange.connect(addr3).checkBalance();
-
-  //     console.log(ownerBalance.toString());
-  //     console.log(addr2Balance.toString());
-  //     console.log(addr3Balance.toString());
-
-  //     // const { dExchange, owner, addr2, addr3 } = await loadFixture(deployFixture);
-  //     await dExchange.connect(addr2).buyTokens(20000);
-      
-  //     expect(await dExchange.tokenBalance()).to.equal(999999999999960000n);
-  //     expect(await dExchange.balances(addr2.address)).to.equal(40000n);
-  //     expect(await dExchange.balances(owner.address)).to.equal(0);
-  //     expect(await dExchange.balances(addr3.address)).to.equal(0);
-  //   })
-
-  //   it('Should emit TokensPurchased event', async () => {
-      
-  //     const { dExchange, owner, addr2, addr3 } = await loadFixture(deployFixture);
-
-  //     let amount = 50;
-  //     let rate = (await dExchange.rate()).toString();
-
-  //     await expect(dExchange.connect(addr2).buyTokens(amount))
-  //       .to.emit(dExchange, "TokensPurchased").withArgs(addr2.address, amount * rate, rate)
-  //   })
-  // })
-
-  // describe('sellTokens()', async () => {
-
-  //   it('Allows user to instantly sell tokens for a fixed price', async () => {
-
-  //     const { dExchange, owner, addr2, addr3 } = await loadFixture(deployFixture);
-  //     let amount = 20000;
-  //     let rate = (await dExchange.rate()).toString();
-  //     //first we have to buy some tokens
-  //     await dExchange.connect(addr2).buyTokens(amount);
-  //     await dExchange.connect(addr2).sellTokens(amount * rate);
-      
-  //     expect(await dExchange.balances(addr2.address)).to.equal(0);
-  //     expect(await dExchange.balances(owner.address)).to.equal(0);
-  //     expect(await dExchange.balances(addr3.address)).to.equal(0);
-  //   })
-    
-  //   it('Should not allow to send more tokens than the balance of the exchange', async () => {
-
-  //     const { dExchange, owner, addr2, addr3 } = await loadFixture(deployFixture);
-      
-  //     await expect(dExchange.connect(addr2).sellTokens(20000))
-  //       .to.be.revertedWith("There are not enough ethers in the exchange");
-  //   })
-
-  //   it('Should emit TokensSold event', async () => {
-      
-  //     const { dExchange, owner, addr2, addr3 } = await loadFixture(deployFixture);
-  //     //first we have to buy some tokens
-  //     await dExchange.connect(addr2).buyTokens(20000);
-
-  //     let amount = 50;
-  //     let rate = (await dExchange.rate()).toString();
-
-  //     console.log(rate)
-
-  //     await expect(dExchange.connect(addr2).sellTokens(amount))
-  //       .to.emit(dExchange, "TokensSold").withArgs(addr2.address, amount, rate)
-  //   })
-  // })
 
 });

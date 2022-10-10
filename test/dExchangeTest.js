@@ -2,7 +2,7 @@ const { expect } = require("chai");
 const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 const { deployDiamond } = require('../scripts/diamondDeploy.js');
 
-describe("DExchange contract", function () {
+describe("DExchangeTest", function () {
   async function deployFixture() {
     const contracts = await deployDiamond(true)
     const diamondAddress = contracts['Diamond'];
@@ -317,8 +317,155 @@ describe("DExchange contract", function () {
     })
   })
 
+  describe('cancelBuyOrder()', async () => {
+    it('Should remote the order when it is canceled', async () => {
+      const { diamondAddress, tokenFactory, depositToken, orderFactory, orderExecutor,
+        displayOrders, token2, owner, addr2, addr3 } = await loadFixture(deployFixture);
 
-  //TODO: Test "cancelBuyOrder", "cancelSellOrder"
-  //TODO: Test "marketBuy", "marketSell"
+      await tokenFactory.connect(owner).addToken(token2.address);
+      await token2.connect(addr2).approve(diamondAddress, 1000);
+      await depositToken.connect(addr2).deposit(token2.address, 1000);
+
+      await orderFactory.connect(addr3).placeBuyOrder(token2.address, 10, 100, { value: 10000 });
+      await orderFactory.connect(addr3).placeBuyOrder(token2.address, 15, 100, { value: 10000 });
+      await orderFactory.connect(addr3).placeBuyOrder(token2.address, 20, 100, { value: 10000 });
+      await orderFactory.connect(addr3).placeBuyOrder(token2.address, 25, 100, { value: 10000 });
+      await orderFactory.connect(addr3).placeBuyOrder(token2.address, 30, 100, { value: 10000 });
+
+      await expect(orderExecutor.connect(addr3).cancelBuyOrder(token2.address, 1))
+        .to.emit(orderExecutor, "OrderCanceled").withArgs(token2.address, 1)
+      
+      var topOrders = await displayOrders.connect(addr3).getTopBuyOrders(token2.address, 5);
+      topOrders.forEach(order => {
+        //order with price 10 have to be removed
+        expect(parseInt(order.price)).to.not.equal(10);
+      });
+    })
+
+    it('Should fail if try to cancel invalid buy order', async () => {
+      const { diamondAddress, tokenFactory, depositToken, orderFactory, orderExecutor,
+        token2, owner, addr2, addr3 } = await loadFixture(deployFixture);
+
+      await tokenFactory.connect(owner).addToken(token2.address);
+      await token2.connect(addr2).approve(diamondAddress, 1000);
+      await depositToken.connect(addr2).deposit(token2.address, 1000);
+
+      await orderFactory.connect(addr3).placeBuyOrder(token2.address, 10, 100, { value: 10000 });
+      await orderFactory.connect(addr3).placeBuyOrder(token2.address, 15, 100, { value: 10000 });
+
+      await expect(orderExecutor.connect(addr3).cancelBuyOrder(token2.address, 123))
+      .to.be.revertedWith("There is no such a order");
+    })
+  })
+
+  describe('cancelSellOrder()', async () => {
+    it('Should remote the order when it is canceled', async () => {
+      const { diamondAddress, tokenFactory, depositToken, orderFactory, orderExecutor,
+        displayOrders, token2, owner, addr2 } = await loadFixture(deployFixture);
+
+      await tokenFactory.connect(owner).addToken(token2.address);
+      await token2.connect(addr2).approve(diamondAddress, 100000);
+      await depositToken.connect(addr2).deposit(token2.address, 100000);
+
+      await orderFactory.connect(addr2).placeSellOrder(token2.address, 10, 100);
+      await orderFactory.connect(addr2).placeSellOrder(token2.address, 15, 100);
+      await orderFactory.connect(addr2).placeSellOrder(token2.address, 20, 100);
+      await orderFactory.connect(addr2).placeSellOrder(token2.address, 25, 100);
+      await orderFactory.connect(addr2).placeSellOrder(token2.address, 30, 100);
+
+      await expect(orderExecutor.connect(addr2).cancelSellOrder(token2.address, 1))
+        .to.emit(orderExecutor, "OrderCanceled").withArgs(token2.address, 1)
+      
+      var topOrders = await displayOrders.connect(addr2).getTopSellOrders(token2.address, 5);
+      topOrders.forEach(order => {
+        //order with price 10 have to be removed
+        expect(parseInt(order.price)).to.not.equal(10);
+      });
+    })
+
+    it('Should fail if try to cancel invalid sell order', async () => {
+      const { diamondAddress, tokenFactory, depositToken, orderFactory, orderExecutor,
+        token2, owner, addr2 } = await loadFixture(deployFixture);
+
+      await tokenFactory.connect(owner).addToken(token2.address);
+      await token2.connect(addr2).approve(diamondAddress, 100000);
+      await depositToken.connect(addr2).deposit(token2.address, 100000);
+
+      await orderFactory.connect(addr2).placeSellOrder(token2.address, 10, 100);
+      await orderFactory.connect(addr2).placeSellOrder(token2.address, 15, 10000);
+
+      await expect(orderExecutor.connect(addr2).cancelSellOrder(token2.address, 123))
+      .to.be.revertedWith("There is no such a order");
+    })
+  })
+
+  describe('buyTokens()', async () => {
+    it('Should be able to buy tokens and throw error if input is not valid', async () => {
+      const { diamondAddress, tokenFactory, depositToken, orderFactory, displayOrders,
+        orderExecutor, token2, owner, addr2, addr3 } = await loadFixture(deployFixture);
+
+      await tokenFactory.connect(owner).addToken(token2.address);
+      await token2.connect(addr2).approve(diamondAddress, 100000000000000000000n);
+      await depositToken.connect(addr2).deposit(token2.address, 100000000000000000000n);
+
+      await orderFactory.connect(addr2).placeSellOrder(token2.address, 200000000000000000n, 20000000000000000000n);
+      await orderFactory.connect(addr2).placeSellOrder(token2.address, 100000000000000000n, 25000000000000000000n);
+      await orderFactory.connect(addr2).placeSellOrder(token2.address, 2000000000000000000n, 1500000000000000000n);
+      await orderFactory.connect(addr2).placeSellOrder(token2.address, 500000000000000000n, 5000000000000000000n);
+      await orderFactory.connect(addr2).placeSellOrder(token2.address, 1000000000000000000n, 500000000000000000n);
+      await orderFactory.connect(addr2).placeSellOrder(token2.address, 5000000000000000000n, 10000000000000000000n);
+    
+      await expect(orderExecutor.connect(addr3).buyTokens(token2.address, {
+        value: 2500000000000000000n
+      })).to.emit(orderExecutor, "TokensPurchased")
+         .withArgs(addr3.address, token2.address, 2500000000000000000n, 25000000000000000000n)
+      
+      var topOrders = await displayOrders.connect(addr2).getTopSellOrders(token2.address, 10);
+      expect(topOrders.filter(order => order.id != 0).length).to.be.equal(5);
+      expect(topOrders[0].amount.toString()).to.be.equal(20000000000000000000n);
+      
+      await expect(orderExecutor.connect(addr3).buyTokens(token2.address, {
+        value: 0
+      })).to.be.revertedWith("Purchase price can not be 0");
+         
+      await expect(orderExecutor.connect(addr3).buyTokens(token2.address, {
+        value: 9900000000000000000000n
+      })).to.be.revertedWith("There are not enough tokens on the exchange");
+
+    })
+  })
+
+  describe('sellTokens()', async () => {
+    it('Should be able to sell tokens and throw error if input is not valid', async () => {
+      const { diamondAddress, tokenFactory, depositToken, orderFactory, displayOrders,
+        orderExecutor, token2, owner, addr2, addr3 } = await loadFixture(deployFixture);
+
+      await tokenFactory.connect(owner).addToken(token2.address);
+      await token2.connect(addr2).approve(diamondAddress, 500000000000000000000n);
+      await depositToken.connect(addr2).deposit(token2.address, 500000000000000000000n);
+
+      await orderFactory.connect(addr3).placeBuyOrder(token2.address, 100000000000000000n, 10000000000000000000n, { value: 10000000000000000000n });
+      await orderFactory.connect(addr3).placeBuyOrder(token2.address, 150000000000000000n, 10000000000000000000n, { value: 10000000000000000000n });
+      await orderFactory.connect(addr3).placeBuyOrder(token2.address, 200000000000000000n, 10000000000000000000n, { value: 10000000000000000000n });
+      await orderFactory.connect(addr3).placeBuyOrder(token2.address, 250000000000000000n, 10000000000000000000n, { value: 10000000000000000000n });
+      await orderFactory.connect(addr3).placeBuyOrder(token2.address, 300000000000000000n, 10000000000000000000n, { value: 10000000000000000000n });
+      await orderFactory.connect(addr3).placeBuyOrder(token2.address, 500000000000000000n, 10000000000000000000n, { value: 10000000000000000000n });
+
+      await expect(orderExecutor.connect(addr2).sellTokens(token2.address, 12500000000000000000n))
+        .to.emit(orderExecutor, "TokensSold")
+        .withArgs(addr2.address, token2.address, 5750000000000000000n, 12500000000000000000n)
+      
+      var topOrders = await displayOrders.connect(addr2).getTopBuyOrders(token2.address, 10);
+      expect(topOrders.filter(order => order.id != 0).length).to.be.equal(5);
+      expect(topOrders[0].amount.toString()).to.be.equal(7500000000000000000n);
+      
+      await expect(orderExecutor.connect(addr2).sellTokens(token2.address, 0))
+        .to.be.revertedWith("Can not sell 0 tokens");
+         
+      await expect(orderExecutor.connect(owner).sellTokens(token2.address, 1))
+        .to.be.revertedWith("Insufficient balance");
+    })
+  })
+  
 
 });

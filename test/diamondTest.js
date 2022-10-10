@@ -29,17 +29,18 @@ const {
     const addresses = []
   
     before(async function () {
-        diamondAddress = await deployDiamond(true)
-        diamondCutFacet = await ethers.getContractAt('DiamondCutFacet', diamondAddress)
-        diamondLoupeFacet = await ethers.getContractAt('DiamondLoupeFacet', diamondAddress)
-        ownershipFacet = await ethers.getContractAt('OwnershipFacet', diamondAddress)
-        accountBalanceFacet = await ethers.getContractAt('AccountBalanceFacet', diamondAddress)
-        depositTokenFacet = await ethers.getContractAt('DepositTokenFacet', diamondAddress)
-        displayOrdersFacet = await ethers.getContractAt('DisplayOrdersFacet', diamondAddress)
-        orderExecutorFacet = await ethers.getContractAt('OrderExecutorFacet', diamondAddress)
-        orderFactoryFacet = await ethers.getContractAt('OrderFactoryFacet', diamondAddress)
-        tokenFactoryFacet = await ethers.getContractAt('TokenFactoryFacet', diamondAddress)
-        withdrawTokenFacet = await ethers.getContractAt('WithdrawTokenFacet', diamondAddress)
+      const contracts = await deployDiamond(true)
+      diamondAddress = contracts['Diamond'];
+      diamondCutFacet = await ethers.getContractAt('DiamondCutFacet', diamondAddress)
+      diamondLoupeFacet = await ethers.getContractAt('DiamondLoupeFacet', diamondAddress)
+      ownershipFacet = await ethers.getContractAt('OwnershipFacet', diamondAddress)
+      accountBalanceFacet = await ethers.getContractAt('AccountBalanceFacet', diamondAddress)
+      depositTokenFacet = await ethers.getContractAt('DepositTokenFacet', diamondAddress)
+      displayOrdersFacet = await ethers.getContractAt('DisplayOrdersFacet', diamondAddress)
+      orderExecutorFacet = await ethers.getContractAt('OrderExecutorFacet', diamondAddress)
+      orderFactoryFacet = await ethers.getContractAt('OrderFactoryFacet', diamondAddress)
+      tokenFactoryFacet = await ethers.getContractAt('TokenFactoryFacet', diamondAddress)
+      withdrawTokenFacet = await ethers.getContractAt('WithdrawTokenFacet', diamondAddress)
     })
   
     it('should have 10 facets -- call to facetAddresses function', async () => {

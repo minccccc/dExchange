@@ -93,7 +93,7 @@ async function deployDiamond(testDeploy) {
 
 
   // returning the address of the diamond
-  return diamond.address
+  return contractAddresses
 }
 
 async function deployContract(owner, contractName) {

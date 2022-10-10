@@ -63,6 +63,10 @@ library LibDiamond {
     function contractOwner() internal view returns (address contractOwner_) {
         contractOwner_ = diamondStorage().contractOwner;
     }
+    
+    function isContractOwner() internal view returns (bool) {
+        return msg.sender ==  diamondStorage().contractOwner;
+    }
 
     function enforceIsContractOwner() internal view {
         if(msg.sender != diamondStorage().contractOwner) {

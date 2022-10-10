@@ -3,14 +3,9 @@ const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 const { deployDiamond } = require('../scripts/diamondDeploy.js');
 
 describe("DExchange contract", function () {
-  // let diamondAddress
-  let contracts
-
   async function deployFixture() {
+    const contracts = await deployDiamond(true)
     const diamondAddress = contracts['Diamond'];
-    // const token1 = contracts['ExchangeToken1'];
-    // const token2 = contracts['ExchangeToken2'];
-    // const token3 = contracts['ExchangeToken3'];
     const [owner, addr2, addr3] = await ethers.getSigners();
     const ownership = await ethers.getContractAt('OwnershipFacet', diamondAddress);
     const accountBalance = await ethers.getContractAt('AccountBalanceFacet', diamondAddress);
@@ -25,18 +20,10 @@ describe("DExchange contract", function () {
     const token2 = await ethers.getContractAt('ExchangeToken2', contracts['ExchangeToken2']);
     const token3 = await ethers.getContractAt('ExchangeToken3', contracts['ExchangeToken3']);
 
-    console.log(owner.address);
-
-    console.log('dva');
-
     return { owner, addr2, addr3, token1, token2, token3, diamondAddress,
       ownership, accountBalance, depositToken, displayOrders,
       orderExecutor, orderFactory, tokenFactory, withdrawToken };
   }
-
-  before(async function () {
-    contracts = await deployDiamond(true)
-  })
 
   describe("Deployment", function () {
     it("Should set the right owner", async function () {
@@ -79,9 +66,12 @@ describe("DExchange contract", function () {
       await tokenFactory.connect(owner).addToken(token1.address);
       await tokenFactory.connect(owner).addToken(token2.address);
 
-      expect((await tokenFactory.listedTokens(token1.address)).name).to.equal('ExchangeToken1');
-      expect((await tokenFactory.listedTokens(token2.address)).name).to.equal('ExchangeToken2');
-      expect((await tokenFactory.listedTokens(token3.address)).name).to.equal('');
+      const listedTokens = await tokenFactory.getListedTokens();
+
+      expect(listedTokens.length == 2);
+      expect(listedTokens[0].name).to.be.equal('ExchangeToken1');
+      expect(listedTokens[1].name).to.be.equal('ExchangeToken2');
+
     })
     
   })
@@ -282,7 +272,7 @@ describe("DExchange contract", function () {
       
       var expectedOrder = [55, 50, 30, 28, 25, 20, 17, 15, 10, 8];
       
-      var topOrders = await displayOrders.connect(addr3).getTopBuyOrders(token2.address);
+      var topOrders = await displayOrders.connect(addr3).getTopBuyOrders(token2.address, 10);
       topOrders.forEach(order => {
         expect(parseInt(order.price)).to.equal(expectedOrder.shift());
       });
@@ -300,7 +290,7 @@ describe("DExchange contract", function () {
     
   describe('getTopSellOrders()', async () => {
     it('Should be able to place multiple sell orders and to return top 10 ordered by price', async () => {
-      const { diamondAddress, tokenFactory, depositToken, orderFactory,
+      const { diamondAddress, tokenFactory, depositToken, orderFactory, displayOrders,
         token2, owner, addr2 } = await loadFixture(deployFixture);
 
       await tokenFactory.connect(owner).addToken(token2.address);
@@ -320,7 +310,7 @@ describe("DExchange contract", function () {
 
       var expectedOrder = [1, 3, 4, 5, 10, 14, 20, 50, 100, 250];
       
-      var topOrders = await orderFactory.connect(addr2).getTopSellOrders(token2.address);
+      var topOrders = await displayOrders.connect(addr2).getTopSellOrders(token2.address, 10);
       topOrders.forEach(order => {
         expect(parseInt(order.price)).to.equal(expectedOrder.shift());
       });

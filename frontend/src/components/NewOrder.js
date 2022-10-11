@@ -72,8 +72,10 @@ export class NewOrder extends React.Component {
         let amount = 0;
         if (price !== 0 ) {
             try {
-                const amountBN = await this.props.exchange.calculateBuyTokensAmount(
-                    this.props.selectedToken.tokenAddress, this.toWei(price));
+                const amountBN = await this.props.exchange.orderExecutor.calculateBuyTokensAmount(
+                    this.props.selectedToken.tokenAddress,
+                    this.toWei(price)
+                );
                 amount = this.toEther(amountBN);
             } catch (error) {
                 console.log(`${error.code} : ${error.errorArgs[0]}`);
@@ -87,8 +89,10 @@ export class NewOrder extends React.Component {
         let price = 0;
         if (amount !== 0 ) {
             try {
-                const priceBN = await this.props.exchange.calculateSellTokensPrice(
-                    this.props.selectedToken.tokenAddress, this.toWei(amount));
+                const priceBN = await this.props.exchange.orderExecutor.calculateSellTokensPrice(
+                    this.props.selectedToken.tokenAddress,
+                    this.toWei(amount)
+                );
                 price = this.toEther(priceBN);
             } catch (error) {
                 console.log(`${error.code} : ${error.errorArgs[0]}`);
@@ -108,23 +112,39 @@ export class NewOrder extends React.Component {
             switch (this.state.type) {
                 case 1:
                     // "Market Buy"
-                    await this.props.exchange.buyTokens(
-                        this.props.selectedToken.tokenAddress, { value: this.getPrice() });
+                    await this.props.exchange.orderExecutor.buyTokens(
+                        this.props.selectedToken.tokenAddress,
+                        {
+                            value: this.getPrice()
+                        }
+                    );
                     break;
                 case 2:
                     // "Market Sell"
-                    await this.props.exchange.sellTokens(this.props.selectedToken.tokenAddress, this.getAmount());
+                    await this.props.exchange.orderExecutor.sellTokens(
+                        this.props.selectedToken.tokenAddress,
+                        this.getAmount()
+                    );
                     break;
                 case 3:
                     // "Limit Buy"
                     const ethAmount = parseFloat(this.state.price) * parseFloat(this.state.amount);
-                    await this.props.exchange.placeBuyOrder(
-                        this.props.selectedToken.tokenAddress, this.getPrice(), this.getAmount(),
-                        { value: ethers.utils.parseEther(ethAmount.toString()) });
+                    await this.props.exchange.orderFactory.placeBuyOrder(
+                        this.props.selectedToken.tokenAddress,
+                        this.getPrice(),
+                        this.getAmount(),
+                        {
+                            value: ethers.utils.parseEther(ethAmount.toString()) 
+                        }
+                    );
                     break;
                 case 4:
                     // "Limit Sell"
-                    await this.props.exchange.placeSellOrder(this.props.selectedToken.tokenAddress, this.getPrice(), this.getAmount());
+                    await this.props.exchange.orderFactory.placeSellOrder(
+                        this.props.selectedToken.tokenAddress,
+                        this.getPrice(),
+                        this.getAmount()
+                    );
                     break;
                 default:
                     break;

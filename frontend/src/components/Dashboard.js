@@ -28,30 +28,7 @@ export class Dashboard extends React.Component {
       myBalance: [],
       selectedToken: null
     };
-
-    // this.test();
   }
-
-  // async test() {
-  //   debugger;
-  //   let provider = new ethers.providers.Web3Provider(window.ethereum);
-  //   let accountBalance = new ethers.Contract(
-  //     contractAddress.Diamond,
-  //     AccountBalanceFacet.abi,
-  //     provider.getSigner(0)
-  //   );
-
-  //   try {
-  //     const balance = await accountBalance.getMyBalance();
-  //     console.log(balance);
-      
-  //     const balance2 = await accountBalance.checkBalance(contractAddress.ExchangeToken2);
-  //     console.log(balance2.toString());
-  //   } catch (error) {
-  //     console.log(`${error.code} : ${error.errorArgs[0]}`);
-  //   }
-
-  // }
 
   prepareExchangeClients() {
     let provider = new ethers.providers.Web3Provider(window.ethereum);
@@ -94,32 +71,53 @@ export class Dashboard extends React.Component {
   }
 
   async setEventListeners() {
-    // let provider = new ethers.providers.Web3Provider(window.ethereum);
-    // const blockNumber = await provider.getBlockNumber();
-    // this.state.exchange.on("OrderCanceled", (tokenAddress, orderId, event) => {
-    //   this.toUpdateOrders(blockNumber, event);
-    // })
-    // this.state.exchange.on("BuyOrderPlaced", (tokenAddress, price, amount, event) => {
-    //   this.toUpdateOrders(blockNumber, event);
-    // })
-    // this.state.exchange.on("SellOrderPlaced", (tokenAddress, price, amount, event) => {
-    //   this.toUpdateOrders(blockNumber, event);
-    // })
+    let provider = new ethers.providers.Web3Provider(window.ethereum);
+    const blockNumber = await provider.getBlockNumber();
+    this.state.exchange.orderExecutor.on("OrderCanceled", (tokenAddress, orderId, event) => {
+
+      console.log("OrderCanceled");
+
+      this.toUpdateOrders(blockNumber, event);
+    })
+    this.state.exchange.orderFactory.on("BuyOrderPlaced", (tokenAddress, price, amount, event) => {
+
+      console.log("BuyOrderPlaced");
+
+      this.toUpdateOrders(blockNumber, event);
+    })
+    this.state.exchange.orderFactory.on("SellOrderPlaced", (tokenAddress, price, amount, event) => {
+
+      console.log("SellOrderPlaced");
+
+      this.toUpdateOrders(blockNumber, event);
+    })
     
-    // this.state.exchange.on("TokensPurchased", (account, tokenAddress, price, amount, event) => {
-    //   this.toUpdateOrders(blockNumber, event);
-    // })
-    // this.state.exchange.on("TokensSold", (account, tokenAddress, price, amount, event) => {
-    //   this.toUpdateOrders(blockNumber, event);
-    // })
+    this.state.exchange.orderExecutor.on("TokensPurchased", (account, tokenAddress, price, amount, event) => {
+
+      console.log("TokensPurchased");
+
+      this.toUpdateOrders(blockNumber, event);
+    })
+    this.state.exchange.orderExecutor.on("TokensSold", (account, tokenAddress, price, amount, event) => {
+
+      console.log("TokensSold");
+
+      this.toUpdateOrders(blockNumber, event);
+    })
     
-    // //update account only
-    // this.state.exchange.on("TokensDeposited", (account, tokenAddress, amount, event) => {
-    //   this.toUpdateAccount(blockNumber, event);
-    // })
-    // this.state.exchange.on("Withdrawn", (account, tokenAddress, amount, event) => {
-    //   this.toUpdateAccount(blockNumber, event);
-    // })
+    //update account only
+    this.state.exchange.depositToken.on("TokensDeposited", (account, tokenAddress, amount, event) => {
+
+      console.log("TokensDeposited");
+
+      this.toUpdateAccount(blockNumber, event);
+    })
+    this.state.exchange.withdrawToken.on("Withdrawn", (account, tokenAddress, amount, event) => {
+
+      console.log("Withdrawn");
+
+      this.toUpdateAccount(blockNumber, event);
+    })
     
   }
 

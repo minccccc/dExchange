@@ -48,9 +48,9 @@ export class Account extends React.Component {
             const amount = ethers.utils.parseEther(this.state.amount);
             if (deposit) {
                 await this.approveDeposit(address, amount);
-                await this.props.exchange.deposit(address, amount);
+                await this.props.exchange.depositToken.deposit(address, amount);
             } else {
-                await this.props.exchange.withdraw(address, amount);
+                await this.props.exchange.withdrawToken.withdraw(address, amount);
             }
         } catch (error) {
             console.log(`${error.code} : ${error.errorArgs[0]}`);

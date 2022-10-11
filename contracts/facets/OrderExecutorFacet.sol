@@ -51,7 +51,7 @@ contract OrderExecutorFacet is InputValidationGuard, ReentrancyGuard {
     function calculateBuyTokensAmount(address tokenAddress, uint purchasePrice) external view
         tokenToBeListed(tokenAddress) returns(uint)
     {
-        OrderListLib.TokenOrderList storage orderList = OrderListLib.getBuyOrderList(tokenAddress);
+        OrderListLib.TokenOrderList storage orderList = OrderListLib.getSellOrderList(tokenAddress);
         return calculatePurchaseTokensAmount(orderList, purchasePrice);
     }
 
@@ -62,7 +62,7 @@ contract OrderExecutorFacet is InputValidationGuard, ReentrancyGuard {
     function calculateSellTokensPrice(address tokenAddress, uint purchaseAmount) external view
         tokenToBeListed(tokenAddress) returns(uint)
     {
-        OrderListLib.TokenOrderList storage orderList = OrderListLib.getSellOrderList(tokenAddress);
+        OrderListLib.TokenOrderList storage orderList = OrderListLib.getBuyOrderList(tokenAddress);
         return calculatePurchaseTokensAmount(orderList, purchaseAmount);
     }
 

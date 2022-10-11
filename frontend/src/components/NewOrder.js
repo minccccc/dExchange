@@ -78,7 +78,7 @@ export class NewOrder extends React.Component {
                 );
                 amount = this.toEther(amountBN);
             } catch (error) {
-                console.log(`${error.code} : ${error.errorArgs[0]}`);
+                console.log(`${error.code} : ${error.data.message}`);
             }
         }
         
@@ -95,7 +95,7 @@ export class NewOrder extends React.Component {
                 );
                 price = this.toEther(priceBN);
             } catch (error) {
-                console.log(`${error.code} : ${error.errorArgs[0]}`);
+                console.log(`${error.code} : ${error.data.message}`);
             }
         }
         
@@ -150,7 +150,7 @@ export class NewOrder extends React.Component {
                     break;
             }
         } catch (error) {
-            console.log(`${error.code} : ${error.errorArgs[0]}`);
+            console.log(`${error.code} : ${error.data.message}`);
         }
 
         this.setState({

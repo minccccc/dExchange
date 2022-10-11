@@ -34,7 +34,7 @@ export class Account extends React.Component {
             abi,
             provider.getSigner(0)
         );
-        await tokenContract.approve(contractAddress.DExchange, amount);
+        await tokenContract.approve(contractAddress.Diamond, amount);
     }
 
     async transfer(deposit) {
@@ -53,7 +53,7 @@ export class Account extends React.Component {
                 await this.props.exchange.withdrawToken.withdraw(address, amount);
             }
         } catch (error) {
-            console.log(`${error.code} : ${error.errorArgs[0]}`);
+            console.log(`${error.code} : ${error.data.message}`);
         }
 
         this.setState({

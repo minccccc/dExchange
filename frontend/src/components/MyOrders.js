@@ -17,7 +17,7 @@ export class MyOrders extends React.Component {
                 await this.props.exchange.orderExecutor.cancelSellOrder(this.props.selectedToken.tokenAddress, orderIndex);
             }
         } catch (error) {
-            console.log(`${error.code} : ${error.errorArgs[0]}`);
+            console.log(`${error.code} : ${error.data.message}`);
         }
     }
 

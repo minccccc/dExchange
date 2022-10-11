@@ -139,7 +139,7 @@ export class Dashboard extends React.Component {
 
       this.refreshOrders(listedTokens[0]);
     } catch (error) {
-      console.log(`${error.code} : ${error.errorArgs[0]}`);
+      console.log(`${error.code} : ${error.data.message}`);
     }
   }
 
@@ -158,7 +158,7 @@ export class Dashboard extends React.Component {
       let topSellOrders = await this.state.exchange.displayOrders.getTopSellOrders(tokenAddress, 10);
       this.setState({ topSellOrders });
     } catch (error) {
-      console.log(`${error.code} : ${error.errorArgs[0]}`);
+      console.log(`${error.code} : ${error.data.message}`);
     }
   }
 
@@ -167,7 +167,7 @@ export class Dashboard extends React.Component {
       let topBuyOrders = await this.state.exchange.displayOrders.getTopBuyOrders(tokenAddress, 10);
       this.setState({ topBuyOrders });
     } catch (error) {
-      console.log(`${error.code} : ${error.errorArgs[0]}`);
+      console.log(`${error.code} : ${error.data.message}`);
     }
   }
 
@@ -176,7 +176,7 @@ export class Dashboard extends React.Component {
       let myBuyOrders = await this.state.exchange.displayOrders.getMyBuyOrders(tokenAddress, 10);
       this.setState({ myBuyOrders });
     } catch (error) {
-      console.log(`${error.code} : ${error.errorArgs[0]}`);
+      console.log(`${error.code} : ${error.data.message}`);
     }
   }
 
@@ -185,7 +185,7 @@ export class Dashboard extends React.Component {
       let mySellOrders = await this.state.exchange.displayOrders.getMySellOrders(tokenAddress, 10);
       this.setState({ mySellOrders });
     } catch (error) {
-      console.log(`${error.code} : ${error.errorArgs[0]}`);
+      console.log(`${error.code} : ${error.data.message}`);
     }
   }
   
@@ -194,7 +194,7 @@ export class Dashboard extends React.Component {
         let myBalance = await this.state.exchange.accountBalance.getMyBalance();
         this.setState({ myBalance });
     } catch (error) {
-        console.log(`${error.code} : ${error.errorArgs[0]}`);
+        console.log(`${error.code} : ${error.data.message}`);
     }
   }
 

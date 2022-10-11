@@ -88,14 +88,50 @@ async function deployDiamond(testDeploy) {
     logs.forEach(log => {
       console.log(log);
     });
+    
+    console.log('Seed some data');
+    const tokenFactory = await ethers.getContractAt('TokenFactoryFacet', diamond.address);
+    const depositToken = await ethers.getContractAt('DepositTokenFacet', diamond.address);
+    const orderFactory = await ethers.getContractAt('OrderFactoryFacet', diamond.address);
+      
+    await tokenFactory.connect(contractOwner).addToken(token1.address);
+    await tokenFactory.connect(contractOwner).addToken(token2.address);
+    await tokenFactory.connect(contractOwner).addToken(token3.address);
+    await token1.connect(contractOwner).approve(diamond.address, 100000000000000000000n);
+    await depositToken.connect(contractOwner).deposit(token1.address, 100000000000000000000n);
+
+    await orderFactory.connect(contractOwner).placeSellOrder(token1.address, 200000000000000000n, 20000000000000000000n);
+    await orderFactory.connect(contractOwner).placeSellOrder(token1.address, 100000000000000000n, 25000000000000000000n);
+    await orderFactory.connect(contractOwner).placeSellOrder(token1.address, 2000000000000000000n, 1500000000000000000n);
+    await orderFactory.connect(contractOwner).placeSellOrder(token1.address, 500000000000000000n, 5000000000000000000n);
+    await orderFactory.connect(contractOwner).placeSellOrder(token1.address, 1000000000000000000n, 500000000000000000n);
+    await orderFactory.connect(contractOwner).placeSellOrder(token1.address, 5000000000000000000n, 10000000000000000000n);
+  
+    await orderFactory.connect(contractOwner).placeBuyOrder(
+      token2.address, 
+      ethers.utils.parseEther("2"), 
+      ethers.utils.parseEther("5"),
+      {
+        value: ethers.utils.parseEther("10")
+      }
+    );
+  
+    await orderFactory.connect(contractOwner).placeBuyOrder(
+      token2.address, 
+      ethers.utils.parseEther("0.01"), 
+      ethers.utils.parseEther("1"),
+      {
+        value: ethers.utils.parseEther("0.1")
+      }
+    );
   }
 
-  //TODO: seed some data
 
-
-  // returning the address of the diamond
+  // return the address of the diamond
   return contractAddresses
 }
+
+async function SeedData() {}
 
 async function deployContract(owner, contractName) {
   const Contract = await ethers.getContractFactory(contractName);

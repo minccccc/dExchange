@@ -42,7 +42,8 @@ async function main() {
     ethers.utils.parseEther("5"),
     {
       value: ethers.utils.parseEther("10")
-    });
+    }
+  );
 
   await dExchange.connect(exhangeOwner).placeBuyOrder(
     token2.address, 
@@ -50,7 +51,8 @@ async function main() {
     ethers.utils.parseEther("1"),
     {
       value: ethers.utils.parseEther("0.1")
-    });
+    }
+  );
 
 }
 

@@ -1,9 +1,14 @@
 import React from "react";
 import { ethers } from "ethers";
-import ExchangeArtifact from "../contracts/DExchange.json";
-import AccountBalanceFacet from "../contracts/AccountBalanceFacet.json";
-import Diamond from "../contracts/Diamond.json";
 import contractAddress from "../contracts/contract-address.json";
+import AccountBalanceFacet from "../contracts/AccountBalanceFacet.json";
+import DepositTokenFacet from "../contracts/DepositTokenFacet.json";
+import DisplayOrdersFacet from "../contracts/DisplayOrdersFacet.json";
+import OrderExecutorFacet from "../contracts/OrderExecutorFacet.json";
+import OrderFactoryFacet from "../contracts/OrderFactoryFacet.json";
+import OwnershipFacet from "../contracts/OwnershipFacet.json";
+import TokenFactoryFacet from "../contracts/TokenFactoryFacet.json";
+import WithdrawTokenFacet from "../contracts/WithdrawTokenFacet.json";
 import { TopOrders } from "./TopOrders";
 import { MyOrders } from "./MyOrders";
 import { LastActions } from "./LastActions";
@@ -12,16 +17,8 @@ import { Account } from "./Account";
 export class Dashboard extends React.Component {
   constructor(props) {
     super(props);
-
-    let provider = new ethers.providers.Web3Provider(window.ethereum);
-    let exchange = new ethers.Contract(
-      contractAddress.DExchange,
-      ExchangeArtifact.abi,
-      provider.getSigner(0)
-    );
-
     this.state = {
-      exchange: exchange,
+      exchange: this.prepareExchangeClients(),
       listedTokens: [],
       topSellOrders: [],
       topBuyOrders: [],
@@ -32,29 +29,50 @@ export class Dashboard extends React.Component {
       selectedToken: null
     };
 
-
-    this.test();
+    // this.test();
   }
 
-  async test() {
+  // async test() {
+  //   debugger;
+  //   let provider = new ethers.providers.Web3Provider(window.ethereum);
+  //   let accountBalance = new ethers.Contract(
+  //     contractAddress.Diamond,
+  //     AccountBalanceFacet.abi,
+  //     provider.getSigner(0)
+  //   );
 
+  //   try {
+  //     const balance = await accountBalance.getMyBalance();
+  //     console.log(balance);
+      
+  //     const balance2 = await accountBalance.checkBalance(contractAddress.ExchangeToken2);
+  //     console.log(balance2.toString());
+  //   } catch (error) {
+  //     console.log(`${error.code} : ${error.errorArgs[0]}`);
+  //   }
+
+  // }
+
+  prepareExchangeClients() {
     let provider = new ethers.providers.Web3Provider(window.ethereum);
-    let accountBalance = new ethers.Contract(
+    return {
+      accountBalance: this.createContract(provider, AccountBalanceFacet.abi),
+      depositToken: this.createContract(provider, DepositTokenFacet.abi),
+      displayOrders: this.createContract(provider, DisplayOrdersFacet.abi),
+      orderExecutor: this.createContract(provider, OrderExecutorFacet.abi),
+      orderFactory: this.createContract(provider, OrderFactoryFacet.abi),
+      // ownership: this.createContract(provider, OwnershipFacet.abi),
+      tokenFactory: this.createContract(provider, TokenFactoryFacet.abi),
+      withdrawToken: this.createContract(provider, WithdrawTokenFacet.abi)
+    };
+  }
+
+  createContract(provider, abi) {
+    return new ethers.Contract(
       contractAddress.Diamond,
-      AccountBalanceFacet.abi,
+      abi,
       provider.getSigner(0)
     );
-
-    try {
-      const balance = await accountBalance.getMyBalance();
-      console.log(balance);
-      
-      const balance2 = await accountBalance.checkBalance(contractAddress.ExchangeToken2);
-      console.log(balance2.toString());
-    } catch (error) {
-      console.log(`${error.code} : ${error.errorArgs[0]}`);
-    }
-
   }
 
   async componentDidMount() {
@@ -76,32 +94,32 @@ export class Dashboard extends React.Component {
   }
 
   async setEventListeners() {
-    let provider = new ethers.providers.Web3Provider(window.ethereum);
-    const blockNumber = await provider.getBlockNumber();
-    this.state.exchange.on("OrderCanceled", (tokenAddress, orderId, event) => {
-      this.toUpdateOrders(blockNumber, event);
-    })
-    this.state.exchange.on("BuyOrderPlaced", (tokenAddress, price, amount, event) => {
-      this.toUpdateOrders(blockNumber, event);
-    })
-    this.state.exchange.on("SellOrderPlaced", (tokenAddress, price, amount, event) => {
-      this.toUpdateOrders(blockNumber, event);
-    })
+    // let provider = new ethers.providers.Web3Provider(window.ethereum);
+    // const blockNumber = await provider.getBlockNumber();
+    // this.state.exchange.on("OrderCanceled", (tokenAddress, orderId, event) => {
+    //   this.toUpdateOrders(blockNumber, event);
+    // })
+    // this.state.exchange.on("BuyOrderPlaced", (tokenAddress, price, amount, event) => {
+    //   this.toUpdateOrders(blockNumber, event);
+    // })
+    // this.state.exchange.on("SellOrderPlaced", (tokenAddress, price, amount, event) => {
+    //   this.toUpdateOrders(blockNumber, event);
+    // })
     
-    this.state.exchange.on("TokensPurchased", (account, tokenAddress, price, amount, event) => {
-      this.toUpdateOrders(blockNumber, event);
-    })
-    this.state.exchange.on("TokensSold", (account, tokenAddress, price, amount, event) => {
-      this.toUpdateOrders(blockNumber, event);
-    })
+    // this.state.exchange.on("TokensPurchased", (account, tokenAddress, price, amount, event) => {
+    //   this.toUpdateOrders(blockNumber, event);
+    // })
+    // this.state.exchange.on("TokensSold", (account, tokenAddress, price, amount, event) => {
+    //   this.toUpdateOrders(blockNumber, event);
+    // })
     
-    //update account only
-    this.state.exchange.on("TokensDeposited", (account, tokenAddress, amount, event) => {
-      this.toUpdateAccount(blockNumber, event);
-    })
-    this.state.exchange.on("Withdrawn", (account, tokenAddress, amount, event) => {
-      this.toUpdateAccount(blockNumber, event);
-    })
+    // //update account only
+    // this.state.exchange.on("TokensDeposited", (account, tokenAddress, amount, event) => {
+    //   this.toUpdateAccount(blockNumber, event);
+    // })
+    // this.state.exchange.on("Withdrawn", (account, tokenAddress, amount, event) => {
+    //   this.toUpdateAccount(blockNumber, event);
+    // })
     
   }
 
@@ -114,7 +132,7 @@ export class Dashboard extends React.Component {
 
   async getListedTokens() {
     try {
-      let listedTokens = await this.state.exchange.getListedTokens();
+      let listedTokens = await this.state.exchange.tokenFactory.getListedTokens();
 
       this.setState({
         listedTokens: listedTokens,
@@ -139,7 +157,7 @@ export class Dashboard extends React.Component {
 
   async getTopSellOrders(tokenAddress) {
     try {
-      let topSellOrders = await this.state.exchange.getTopSellOrders(tokenAddress);
+      let topSellOrders = await this.state.exchange.displayOrders.getTopSellOrders(tokenAddress, 10);
       this.setState({ topSellOrders });
     } catch (error) {
       console.log(`${error.code} : ${error.errorArgs[0]}`);
@@ -148,7 +166,7 @@ export class Dashboard extends React.Component {
 
   async getTopBuyOrders(tokenAddress) {
     try {
-      let topBuyOrders = await this.state.exchange.getTopBuyOrders(tokenAddress);
+      let topBuyOrders = await this.state.exchange.displayOrders.getTopBuyOrders(tokenAddress, 10);
       this.setState({ topBuyOrders });
     } catch (error) {
       console.log(`${error.code} : ${error.errorArgs[0]}`);
@@ -157,7 +175,7 @@ export class Dashboard extends React.Component {
 
   async getMyBuyOrders(tokenAddress) {
     try {
-      let myBuyOrders = await this.state.exchange.getMyBuyOrders(tokenAddress);
+      let myBuyOrders = await this.state.exchange.displayOrders.getMyBuyOrders(tokenAddress, 10);
       this.setState({ myBuyOrders });
     } catch (error) {
       console.log(`${error.code} : ${error.errorArgs[0]}`);
@@ -166,7 +184,7 @@ export class Dashboard extends React.Component {
 
   async getMySellOrders(tokenAddress) {
     try {
-      let mySellOrders = await this.state.exchange.getMySellOrders(tokenAddress);
+      let mySellOrders = await this.state.exchange.displayOrders.getMySellOrders(tokenAddress, 10);
       this.setState({ mySellOrders });
     } catch (error) {
       console.log(`${error.code} : ${error.errorArgs[0]}`);
@@ -175,7 +193,7 @@ export class Dashboard extends React.Component {
   
   async getMyBalance() {
     try {
-        let myBalance = await this.state.exchange.getMyBalance();
+        let myBalance = await this.state.exchange.accountBalance.getMyBalance();
         this.setState({ myBalance });
     } catch (error) {
         console.log(`${error.code} : ${error.errorArgs[0]}`);

@@ -4,6 +4,7 @@ pragma solidity ^0.8.9;
 import { Order } from "../common/Order.sol";
 import { OrderListLib } from "../libraries/OrderListLib.sol";
 import { DExchangeLib } from "../libraries/DExchangeLib.sol";
+import { LibDiamond } from "../libraries/LibDiamond.sol";
 import { InputValidationGuard } from "../common/InputValidationGuard.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
@@ -156,6 +157,9 @@ contract OrderExecutorFacet is InputValidationGuard, ReentrancyGuard {
     }
 
     function cancelOrder(OrderListLib.TokenOrderList storage orderList, uint orderId) private returns(Order memory) {
+        Order memory order = orderList.orders[orderId];
+        require (order.id == 0 || order.user == msg.sender || LibDiamond.isContractOwner(), 'You don''t have permissions to finalize this order');
+        
         return finalizeOrder(orderList, orderId);
     }
 
@@ -167,8 +171,6 @@ contract OrderExecutorFacet is InputValidationGuard, ReentrancyGuard {
     function finalizeOrder(OrderListLib.TokenOrderList storage orderList, uint orderId) private returns(Order memory) {
 
         Order memory order = orderList.orders[orderId];
-        //TODO
-        // require (order.user == msg.sender || owner == msg.sender, 'You don''t have permissions to finalize this order');
         require (order.id == orderId && orderId != 0, 'There is no such a order');
 
         Order storage previous = orderList.orders[order.prev];

@@ -1,6 +1,8 @@
 import React from "react";
 import { ethers } from "ethers";
 import ExchangeArtifact from "../contracts/DExchange.json";
+import AccountBalanceFacet from "../contracts/AccountBalanceFacet.json";
+import Diamond from "../contracts/Diamond.json";
 import contractAddress from "../contracts/contract-address.json";
 import { TopOrders } from "./TopOrders";
 import { MyOrders } from "./MyOrders";
@@ -29,6 +31,30 @@ export class Dashboard extends React.Component {
       myBalance: [],
       selectedToken: null
     };
+
+
+    this.test();
+  }
+
+  async test() {
+
+    let provider = new ethers.providers.Web3Provider(window.ethereum);
+    let accountBalance = new ethers.Contract(
+      contractAddress.Diamond,
+      AccountBalanceFacet.abi,
+      provider.getSigner(0)
+    );
+
+    try {
+      const balance = await accountBalance.getMyBalance();
+      console.log(balance);
+      
+      const balance2 = await accountBalance.checkBalance(contractAddress.ExchangeToken2);
+      console.log(balance2.toString());
+    } catch (error) {
+      console.log(`${error.code} : ${error.errorArgs[0]}`);
+    }
+
   }
 
   async componentDidMount() {

@@ -82,6 +82,7 @@ async function deployDiamond(testDeploy) {
   logs.push('Diamond deployed:' + diamond.address);
 
   saveContractAddress(contractAddresses);
+  saveFrontendFiles(contractOwner, 'Diamond');
 
   if (!testDeploy) {
     logs.forEach(log => {
@@ -101,7 +102,26 @@ async function deployContract(owner, contractName) {
   const contract = await Contract.connect(owner).deploy();
   await contract.deployed();
 
+  // We also save the contract's artifacts and address in the frontend directory
+  saveFrontendFiles(contract, contractName);
+
   return contract;
+}
+
+function saveFrontendFiles(contract, contractName) {
+  const fs = require("fs");
+  const contractsDir = path.join(__dirname, "..", "frontend", "src", "contracts");
+
+  if (!fs.existsSync(contractsDir)) {
+    fs.mkdirSync(contractsDir);
+  }
+
+  const TokenArtifact = artifacts.readArtifactSync(contractName);
+
+  fs.writeFileSync(
+    path.join(contractsDir, contractName + ".json"),
+    JSON.stringify(TokenArtifact, null, 2)
+  );
 }
 
 function saveContractAddress(data) {

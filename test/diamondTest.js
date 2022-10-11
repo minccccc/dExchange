@@ -7,7 +7,7 @@ const {
     findAddressPositionInFacets
   } = require('../scripts/libraries/diamond.js')
   
-  const { deployDiamond } = require('../scripts/diamondDeploy.js')
+  const { deployDiamond } = require('../scripts/deploy.js')
   const { assert } = require('chai')
   const { ethers } = require('hardhat')
   

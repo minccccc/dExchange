@@ -1,6 +1,6 @@
 const { expect } = require("chai");
 const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
-const { deployDiamond } = require('../scripts/diamondDeploy.js');
+const { deployDiamond } = require('../scripts/deploy.js');
 
 describe("DExchangeTest", function () {
   async function deployFixture() {

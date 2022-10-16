@@ -8,6 +8,7 @@ import { DiamondLib } from "../libraries/DiamondLib.sol";
 import { InputValidationGuard } from "../common/InputValidationGuard.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "hardhat/console.sol";
 
 contract OrderExecutorFacet is InputValidationGuard, ReentrancyGuard {
     using SafeMath for uint;
@@ -89,7 +90,8 @@ contract OrderExecutorFacet is InputValidationGuard, ReentrancyGuard {
             Order memory order = executedOrders[i];
 
             if (order.id != 0 && order.user != address(0)) {
-                (bool sent, ) = order.user.call{value: msg.value}("");
+                uint ethToSend = order.price.mul(order.amount).div(1 ether);
+                (bool sent, ) = order.user.call{value: ethToSend}("");
                 require(sent, "Failed to send Ether to the seller");
             }
         }

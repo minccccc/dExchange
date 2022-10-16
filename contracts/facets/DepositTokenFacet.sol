@@ -20,10 +20,12 @@ contract DepositTokenFacet is InputValidationGuard, ReentrancyGuard {
         tokenToBeListed(tokenAddress)
     {
         DExchangeLib.DExchangeStorage storage stg = DExchangeLib.getStorage();
-
-        stg.tokenBalances[msg.sender][tokenAddress] += tokenAmount;       
-        stg.listedTokens[tokenAddress].tokenContract.transferFrom(msg.sender, address(this), tokenAmount);
+    
+        bool success = stg.listedTokens[tokenAddress].tokenContract.transferFrom(msg.sender, address(this), tokenAmount);
         
+        require(success, "Deposit operation is terminated");
+
+        stg.tokenBalances[msg.sender][tokenAddress] += tokenAmount;   
         emit TokensDeposited(msg.sender, tokenAddress, tokenAmount);
     }
 }

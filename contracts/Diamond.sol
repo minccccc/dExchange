@@ -31,8 +31,6 @@ contract Diamond {
     constructor(IDiamondCut.FacetCut[] memory _diamondCut, DiamondArgs memory _args) payable {
         DiamondLib.setContractOwner(_args.owner);
         DiamondLib.diamondCut(_diamondCut, _args.init, _args.initCalldata);
-
-        // Code can be added here to perform actions and set state variables.
     }
 
     // Find facet for function that is called and execute the

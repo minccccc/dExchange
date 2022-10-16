@@ -8,7 +8,7 @@ pragma solidity ^0.8.9;
 * Implementation of a diamond.
 /******************************************************************************/
 
-import { LibDiamond } from "../libraries/LibDiamond.sol";
+import { DiamondLib } from "../libraries/DiamondLib.sol";
 
 error AddressAndCalldataLengthDoNotMatch(uint256 _addressesLength, uint256 _calldataLength);
 
@@ -22,7 +22,7 @@ contract DiamondMultiInit {
             revert AddressAndCalldataLengthDoNotMatch(_addresses.length, _calldata.length);
         }
         for(uint i; i < _addresses.length; i++) {
-            LibDiamond.initializeDiamondCut(_addresses[i], _calldata[i]);            
+            DiamondLib.initializeDiamondCut(_addresses[i], _calldata[i]);            
         }
     }
 }

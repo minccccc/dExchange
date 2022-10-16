@@ -27,7 +27,7 @@ error CannotRemoveFunctionThatDoesNotExist(bytes4 _selector);
 error CannotRemoveImmutableFunction(bytes4 _selector);
 error InitializationFunctionReverted(address _initializationContractAddress, bytes _calldata);
 
-library LibDiamond {
+library DiamondLib {
     bytes32 constant DIAMOND_STORAGE_POSITION = keccak256("diamond.standard.diamond.storage");
 
     struct FacetAddressAndSelectorPosition {
@@ -109,7 +109,7 @@ library LibDiamond {
         }
         DiamondStorage storage ds = diamondStorage();
         uint16 selectorCount = uint16(ds.selectors.length);                
-        enforceHasContractCode(_facetAddress, "LibDiamondCut: Add facet has no code");
+        enforceHasContractCode(_facetAddress, "DiamondLibCut: Add facet has no code");
         for (uint256 selectorIndex; selectorIndex < _functionSelectors.length; selectorIndex++) {
             bytes4 selector = _functionSelectors[selectorIndex];
             address oldFacetAddress = ds.facetAddressAndSelectorPosition[selector].facetAddress;
@@ -127,7 +127,7 @@ library LibDiamond {
         if(_facetAddress == address(0)) {
             revert CannotReplaceFunctionsFromFacetWithZeroAddress(_functionSelectors);
         }
-        enforceHasContractCode(_facetAddress, "LibDiamondCut: Replace facet has no code");
+        enforceHasContractCode(_facetAddress, "DiamondLibCut: Replace facet has no code");
         for (uint256 selectorIndex; selectorIndex < _functionSelectors.length; selectorIndex++) {
             bytes4 selector = _functionSelectors[selectorIndex];
             address oldFacetAddress = ds.facetAddressAndSelectorPosition[selector].facetAddress;
@@ -181,7 +181,7 @@ library LibDiamond {
         if (_init == address(0)) {
             return;
         }
-        enforceHasContractCode(_init, "LibDiamondCut: _init address has no code");        
+        enforceHasContractCode(_init, "DiamondLibCut: _init address has no code");        
         (bool success, bytes memory error) = _init.delegatecall(_calldata);
         if (!success) {
             if (error.length > 0) {

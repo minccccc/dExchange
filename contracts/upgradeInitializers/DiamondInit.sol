@@ -8,7 +8,7 @@ pragma solidity ^0.8.9;
 * Implementation of a diamond.
 /******************************************************************************/
 
-import { LibDiamond } from "../libraries/LibDiamond.sol";
+import { DiamondLib } from "../libraries/DiamondLib.sol";
 import { IDiamondLoupe } from "../interfaces/IDiamondLoupe.sol";
 import { IDiamondCut } from "../interfaces/IDiamondCut.sol";
 import { IERC173 } from "../interfaces/IERC173.sol";
@@ -27,7 +27,7 @@ contract DiamondInit {
     // data to set your own state variables
     function init() external {
         // adding ERC165 data
-        LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();
+        DiamondLib.DiamondStorage storage ds = DiamondLib.diamondStorage();
         ds.supportedInterfaces[type(IERC165).interfaceId] = true;
         ds.supportedInterfaces[type(IDiamondCut).interfaceId] = true;
         ds.supportedInterfaces[type(IDiamondLoupe).interfaceId] = true;

@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
 
-// import { Order } from "../common/Order.sol";
 import { OrderListLib } from "../libraries/OrderListLib.sol";
 import { DExchangeLib } from "../libraries/DExchangeLib.sol";
-import { LibDiamond } from "../libraries/LibDiamond.sol";
+import { DiamondLib } from "../libraries/DiamondLib.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 /// @notice Manage tokens on the exchange
@@ -15,7 +14,7 @@ contract TokenFactoryFacet {
     /// @param token Address of the token contract
     function addToken(ERC20 token) external {
         //TODO: change with "revert error"
-        require(LibDiamond.isContractOwner(), "Only the owner can add tokens into the exchange");
+        require(DiamondLib.isContractOwner(), "Only the owner can add tokens into the exchange");
         require(address(token) != address(0), "Token address is empty");
 
         DExchangeLib.DExchangeStorage storage stg = DExchangeLib.getStorage();

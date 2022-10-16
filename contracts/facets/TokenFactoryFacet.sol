@@ -6,6 +6,10 @@ import { DExchangeLib } from "../libraries/DExchangeLib.sol";
 import { DiamondLib } from "../libraries/DiamondLib.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
+error NotAutorizedToAddToken();
+error EmptyTokenAddress(address tokenAddress);
+error TokenAlreadyListed(address tokenAddress);
+
 /// @notice Manage tokens on the exchange
 /// @dev Provide functions owner to be able to add new ERC20 compatible tokens on the exchange
 contract TokenFactoryFacet {
@@ -13,13 +17,18 @@ contract TokenFactoryFacet {
     /// @dev Adds a new token address to the list of tokens on the exchange  
     /// @param token Address of the token contract
     function addToken(ERC20 token) external {
-        //TODO: change with "revert error"
-        require(DiamondLib.isContractOwner(), "Only the owner can add tokens into the exchange");
-        require(address(token) != address(0), "Token address is empty");
+        if(!DiamondLib.isContractOwner()) {
+            revert NotAutorizedToAddToken();
+        }
+        if(address(token) == address(0)) {
+            revert EmptyTokenAddress(address(token));
+        }
 
         DExchangeLib.DExchangeStorage storage stg = DExchangeLib.getStorage();
 
-        require(stg.listedTokens[address(token)].tokenAddress == address(0), "This token is already listed on the exchange");
+        if(stg.listedTokens[address(token)].tokenAddress != address(0)) {
+            revert TokenAlreadyListed(address(token));
+        }
 
         stg.listedTokens[address(token)] = DExchangeLib.ListedToken({
             name : token.name(),

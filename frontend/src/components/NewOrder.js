@@ -78,7 +78,7 @@ export class NewOrder extends React.Component {
                 );
                 amount = this.toEther(amountBN);
             } catch (error) {
-                console.log(`${error.code} : ${error.data.message}`);
+                console.log(`${error.errorName}`);
             }
         }
         

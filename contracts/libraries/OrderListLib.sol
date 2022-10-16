@@ -36,26 +36,5 @@ library OrderListLib {
         return getStorage().sellOrders[tokenAddress];
     }
 
-    // function getFirst() internal view returns(Order memory) {
-    //     return getStorage().orders[getStorage().head];
-    // }
-
-    // function getNext(Order memory order) internal view returns(Order memory) {
-    //     return getStorage().orders[order.next];
-    // }
-    
-    // function getOrdersCount() internal view returns (uint){
-    //     return getStorage().idCounter > 0 ? getStorage().idCounter - 1 : 0;
-    // }
-
-    // function getOrder(uint orderId) internal view returns(Order memory) {
-    //     Order memory order = getStorage().orders[orderId];
-    //     require (order.id > 0, 'There is no such a order');
-    //     if (order.id == 0) {
-    //         revert OrderNotFound(orderId);
-    //     } else {
-    //         return order;
-    //     }
-    // }
 }
 

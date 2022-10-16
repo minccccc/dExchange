@@ -10,6 +10,8 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "hardhat/console.sol";
 
+error NotEnoughTokensOnExchange();
+
 contract OrderExecutorFacet is InputValidationGuard, ReentrancyGuard {
     using SafeMath for uint;
 
@@ -230,7 +232,8 @@ contract OrderExecutorFacet is InputValidationGuard, ReentrancyGuard {
                 assert(_purchaseChange >= 0);
             }
         }
-        revert('There are not enough tokens on the exchange');
+
+        revert NotEnoughTokensOnExchange();
     }
 
     function calculateOrderPrice(uint price, uint amount) private pure returns (uint) {

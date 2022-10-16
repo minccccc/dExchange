@@ -43,21 +43,21 @@ describe("DExchangeTest", function () {
       await tokenFactory.connect(owner).addToken(token1.address);
 
       await expect(tokenFactory.connect(owner).addToken(token1.address))
-        .to.be.revertedWith("This token is already listed on the exchange");
+        .to.be.revertedWithCustomError(tokenFactory, "TokenAlreadyListed");
     })
     
     it('Should revert the transaction if the token address is empty', async () => {
       const { owner, tokenFactory } = await loadFixture(deployFixture);
 
       await expect(tokenFactory.connect(owner).addToken('0x0000000000000000000000000000000000000000'))
-        .to.be.revertedWith("Token address is empty");
+        .to.be.revertedWithCustomError(tokenFactory, "EmptyTokenAddress");
     })
 
     it('Only owner can add new tokens to the exchange', async () => {
       const { tokenFactory, token1, addr2 } = await loadFixture(deployFixture);
 
       await expect(tokenFactory.connect(addr2).addToken(token1.address))
-        .to.be.revertedWith("Only the owner can add tokens into the exchange");
+        .to.be.revertedWithCustomError(tokenFactory, "NotAutorizedToAddToken");
     })
   
     it('All added tokens have to be in "listedTokens"', async () => {
@@ -430,7 +430,7 @@ describe("DExchangeTest", function () {
          
       await expect(orderExecutor.connect(addr3).buyTokens(token2.address, {
         value: 9900000000000000000000n
-      })).to.be.revertedWith("There are not enough tokens on the exchange");
+      })).to.be.revertedWithCustomError(orderExecutor, "NotEnoughTokensOnExchange");
 
     })
   })
